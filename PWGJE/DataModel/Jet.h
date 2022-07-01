@@ -263,6 +263,37 @@ using HybridIntermediateJetClusterConstituent = HybridIntermediateJetClusterCons
 JET_CONSTITUENTS_SUB_TABLE_DEF(HybridIntermediateJet, hybridintermediate, "HYBINT");
 using HybridIntermediateJetConstituentSub = HybridIntermediateJetConstituentsSub::iterator;
 
+// HF jets
+JET_TABLE_DEF(Collision, HFJet, hfjet, "HFJET");
+using HFJet = HFJets::iterator;
+using MatchedHFJet = MatchedHFJets::iterator;
+JET_CONSTITUENTS_TABLE_DEF(HFJet, hfjet, "HFJET", Track);
+using HFJetTrackConstituent = HFJetTrackConstituents::iterator;
+using HFJetClusterConstituent = HFJetClusterConstituents::iterator;
+JET_CONSTITUENTS_SUB_TABLE_DEF(HFJet, hfjet, "HFJET");
+using HFJetConstituentSub = HFJetConstituentsSub::iterator;
+
+// HF jets (MC particle level)
+// HFJETMCPART ??? too long for const char[16]
+JET_TABLE_DEF(McCollision, MCParticleLevelHFJet, mcparticlelevelhfjet, "HFJETMCP");
+using MCParticleLevelHFJet = MCParticleLevelHFJets::iterator;
+using MatchedMCParticleLevelHFJet = MatchedMCParticleLevelHFJets::iterator;
+JET_CONSTITUENTS_TABLE_DEF(MCParticleLevelHFJet, mcparticlelevelhfjet, "HFMCP", McParticle);
+using MCParticleLevelHFJetTrackConstituent = MCParticleLevelHFJetTrackConstituents::iterator;
+using MCParticleLevelHFJetClusterConstituent = MCParticleLevelHFJetClusterConstituents::iterator;
+JET_CONSTITUENTS_SUB_TABLE_DEF(MCParticleLevelHFJet, mcparticlelevelhfjet, "HFMCP");
+using MCParticleLevelHFJetConstituentSub = MCParticleLevelHFJetConstituentsSub::iterator;
+
+// HF jets (MC detector level)
+JET_TABLE_DEF(Collision, MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFJETMCD");
+using MCDetectorLevelHFJet = MCDetectorLevelHFJets::iterator;
+using MatchedMCDetectorLevelHFJet = MatchedMCDetectorLevelHFJets::iterator;
+JET_CONSTITUENTS_TABLE_DEF(MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFMCD", Track);
+using MCDetectorLevelHFJetTrackConstituent = MCDetectorLevelHFJetTrackConstituents::iterator;
+using MCDetectorLevelHFJetClusterConstituent = MCDetectorLevelHFJetClusterConstituents::iterator;
+JET_CONSTITUENTS_SUB_TABLE_DEF(MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFMCD");
+using MCDetectorLevelHFJetConstituentSub = MCDetectorLevelHFJetConstituentsSub::iterator;
+
 } // namespace o2::aod
 
 #endif

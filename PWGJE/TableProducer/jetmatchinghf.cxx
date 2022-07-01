@@ -37,14 +37,15 @@ struct JetMatchingHF {
 
   void process(
     soa::Filtered<o2::aod::Collisions>::iterator const& collision,
-    aod::MCParticleLevelJets const& jetsMC,
-    aod::MCParticleLevelJetTrackConstituents const& constituentsMC,
+    aod::MCParticleLevelHFJets const& jetsMC,
+    aod::MCParticleLevelHFJetTrackConstituents const& constituentsMC,
     aod::McParticles const& particlesMC,
-    aod::Jets const& jetsRec,
-    aod::JetTrackConstituents const& constituentsRec,
+    aod::MCDetectorLevelHFJets const& jetsRec,
+    aod::MCDetectorLevelHFJetTrackConstituents const& constituentsRec,
     soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks
     )
   {
+    return;
     // match rec to MC
     for (const auto &c : constituentsRec) {
       // TODO: check access to track
@@ -54,13 +55,14 @@ struct JetMatchingHF {
         continue;
       }
       auto mcparticle = track.mcParticle();
+      // should use HF candidate instead
       if (TMath::Abs(mcparticle.pdgCode()) != 421)
         continue;
       aod::MCParticleLevelJetTrackConstituent mc_constituent;
       for (const auto &mcc : constituentsMC) {
         if (mcc.track().index() == mcparticle.index()) {
           jetsRecMatching(c.jet().globalIndex(), mc_constituent.jet().globalIndex());
-          mc_constituent = mcc;
+          // mc_constituent = mcc;
           break;
         }
       }
@@ -76,7 +78,7 @@ struct JetMatchingHF {
         const auto track = tracks.rawIteratorAt(rc.track().index());
         if (!track.has_mcParticle()) continue;
         if (track.mcParticle().index() == c.track().index()) {
-          rec_constituent = rc;
+          // rec_constituent = rc;
           jetsMCMatching(c.jet().globalIndex(), rec_constituent.jet().globalIndex());
           break;
         }

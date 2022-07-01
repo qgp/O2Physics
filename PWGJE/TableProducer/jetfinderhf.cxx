@@ -13,7 +13,6 @@
 //
 // Author: Nima Zardoshti
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
@@ -31,9 +30,24 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
+{
+  ConfigParamSpec hfjetMode = {
+    "hfjetMode",
+    VariantType::String,
+    "",
+    {"HF jet finder mode."},
+  };
+  workflowOptions.push_back(hfjetMode);
+}
+
+// NB: runDataProcessing.h must be included after customize!
+#include "Framework/runDataProcessing.h"
+
+template <typename JetTable, typename TrackConstituentTable>
 struct JetFinderHFTask {
-  Produces<o2::aod::Jets> jetsTable;
-  Produces<o2::aod::JetTrackConstituents> trackConstituents;
+  Produces<JetTable> jetsTable;
+  Produces<TrackConstituentTable> trackConstituents;
   OutputObj<TH1F> hJetPt{"h_jet_pt"};
   OutputObj<TH1F> hD0Pt{"h_D0_pt"};
 
@@ -58,7 +72,7 @@ struct JetFinderHFTask {
   Filter trackCuts = (aod::track::pt > 0.15f && aod::track::eta > -0.9f && aod::track::eta < 0.9f);
   Filter seltrack = (aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar);
 
-  void process(aod::Collision const& collision,
+  void processData(aod::Collision const& collision,
                soa::Filtered<aod::Tracks> const& tracks,
                soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> const& candidates)
   {
@@ -105,10 +119,33 @@ struct JetFinderHFTask {
       }
     }
   }
+  PROCESS_SWITCH(JetFinderHFTask, processData, "HF jet finding on data", true);
 };
+
+using JetFinderHF = JetFinderHFTask<o2::aod::HFJets, o2::aod::HFJetTrackConstituents>;
+using MCParticleLevelJetFinderHF = JetFinderHFTask<o2::aod::MCParticleLevelHFJets, o2::aod::MCParticleLevelHFJetTrackConstituents>;
+using MCDetectorLevelJetFinderHF = JetFinderHFTask<o2::aod::MCDetectorLevelHFJets, o2::aod::MCDetectorLevelHFJetTrackConstituents>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<JetFinderHFTask>(cfgc, TaskName{"jet-finder-hf"})};
+  std::vector<o2::framework::DataProcessorSpec> tasks;
+
+  auto hfjetMode = cfgc.options().get<std::string>("hfjetMode");
+  
+  if (hfjetMode.find("data") != std::string::npos)
+    tasks.emplace_back(adaptAnalysisTask<JetFinderHF>(cfgc,
+      SetDefaultProcesses{{{"processData", true}}},
+      TaskName{"jet-finder-hf-data"}));
+
+  if (hfjetMode.find("mcp") != std::string::npos)
+    tasks.emplace_back(adaptAnalysisTask<MCParticleLevelJetFinderHF>(cfgc,
+      SetDefaultProcesses{{{"processData", true}}},
+      TaskName{"jet-finder-hf-mcp"}));
+
+  if (hfjetMode.find("mcd") != std::string::npos)
+    tasks.emplace_back(adaptAnalysisTask<MCDetectorLevelJetFinderHF>(cfgc,
+      SetDefaultProcesses{{{"processData", true}}},
+      TaskName{"jet-finder-hf-mcd"}));
+
+  return WorkflowSpec{tasks};
 }
