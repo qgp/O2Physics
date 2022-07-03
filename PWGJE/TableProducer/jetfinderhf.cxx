@@ -120,6 +120,71 @@ struct JetFinderHFTask {
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processData, "HF jet finding on data", true);
+
+  // should we use the matching to MC from HFCandidateCreator2Prong here?
+  void processMCD(aod::Collision const& collision,
+               soa::Filtered<aod::Tracks> const& tracks,
+               soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> const& candidates) {
+    LOG(debug) << "Per Event MCP";
+    processData(collision, tracks, candidates);
+  }
+  PROCESS_SWITCH(JetFinderHFTask, processMCD, "HF jet finding on MC detector level", false);
+
+  // can we get the candidates from another task already?
+  void processMCP(aod::McCollision const& collision,
+               aod::McParticles const& particles) {
+    LOG(debug) << "Per Event MCP";
+    // TODO: retrieve pion mass from somewhere
+    bool isHFJet;
+
+    std::vector<aod::McParticle> candidates;
+    for (auto const &part : particles) {
+      if (std::abs(part.pdgCode()) == 421) {
+        candidates.push_back(part);
+      }
+    }
+
+    //this loop should be made more efficient
+    for (auto& candidate : candidates) {
+      jets.clear();
+      inputParticles.clear();
+      for (auto& track : particles) {
+        auto energy = std::sqrt(track.p() * track.p() + JetFinder::mPion * JetFinder::mPion);
+        // TODO: check use of indices
+        if (std::find(std::begin(candidate.mothersIds()), std::end(candidate.mothersIds()), track.index()) != std::end(candidate.mothersIds()))
+          continue;
+        inputParticles.emplace_back(track.px(), track.py(), track.pz(), energy);
+        inputParticles.back().set_user_index(track.globalIndex());
+      }
+      inputParticles.emplace_back(candidate.px(), candidate.py(), candidate.pz(), candidate.e());
+      inputParticles.back().set_user_index(1);
+
+      fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
+
+      for (const auto& jet : jets) {
+        isHFJet = false;
+        for (const auto& constituent : jet.constituents()) {
+          // we have only selected D0s above, so enough to test user_index ???
+          if (constituent.user_index() == 1) {
+            isHFJet = true;
+            break;
+          }
+        }
+        if (isHFJet) {
+          jetsTable(collision, jet.eta(), jet.phi(), jet.pt(),
+                    jet.area(), jet.E(), jet.m(), jetFinder.jetR);
+          for (const auto& constituent : jet.constituents()) {
+            trackConstituents(jetsTable.lastIndex(), constituent.user_index());
+          }
+          hJetPt->Fill(jet.pt());
+          std::cout << "Filling" << std::endl;
+          hD0Pt->Fill(candidate.pt());
+          break;
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(JetFinderHFTask, processMCP, "HF jet finding on MC particle level", false);
 };
 
 using JetFinderHF = JetFinderHFTask<o2::aod::HFJets, o2::aod::HFJetTrackConstituents>;
@@ -134,17 +199,17 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   
   if (hfjetMode.find("data") != std::string::npos)
     tasks.emplace_back(adaptAnalysisTask<JetFinderHF>(cfgc,
-      SetDefaultProcesses{{{"processData", true}}},
+      SetDefaultProcesses{{{"processData", true}, {"processMCP", false}, {"processMCD", false}}},
       TaskName{"jet-finder-hf-data"}));
 
   if (hfjetMode.find("mcp") != std::string::npos)
     tasks.emplace_back(adaptAnalysisTask<MCParticleLevelJetFinderHF>(cfgc,
-      SetDefaultProcesses{{{"processData", true}}},
+      SetDefaultProcesses{{{"processData", false}, {"processMCP", true}, {"processMCD", false}}},
       TaskName{"jet-finder-hf-mcp"}));
 
   if (hfjetMode.find("mcd") != std::string::npos)
     tasks.emplace_back(adaptAnalysisTask<MCDetectorLevelJetFinderHF>(cfgc,
-      SetDefaultProcesses{{{"processData", true}}},
+      SetDefaultProcesses{{{"processData", false}, {"processMCP", false}, {"processMCD", true}}},
       TaskName{"jet-finder-hf-mcd"}));
 
   return WorkflowSpec{tasks};
