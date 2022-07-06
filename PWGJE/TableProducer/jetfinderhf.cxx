@@ -126,7 +126,48 @@ struct JetFinderHFTask {
                soa::Filtered<aod::Tracks> const& tracks,
                soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> const& candidates) {
     LOG(debug) << "Per Event MCP";
-    processData(collision, tracks, candidates);
+     std::cout << "Per Event" << std::endl;
+    // TODO: retrieve pion mass from somewhere
+    bool isHFJet;
+
+    //this loop should be made more efficient
+    for (auto& candidate : candidates) {
+      jets.clear();
+      inputParticles.clear();
+      for (auto& track : tracks) {
+        auto energy = std::sqrt(track.p() * track.p() + JetFinder::mPion * JetFinder::mPion);
+        if (candidate.index0().globalIndex() == track.globalIndex() || candidate.index1().globalIndex() == track.globalIndex()) { //is it global index?
+          continue;
+        }
+        inputParticles.emplace_back(track.px(), track.py(), track.pz(), energy);
+        inputParticles.back().set_user_index(track.globalIndex());
+      }
+      inputParticles.emplace_back(candidate.px(), candidate.py(), candidate.pz(), candidate.e(RecoDecay::getMassPDG(pdgD0)));
+      inputParticles.back().set_user_index(1);
+
+      fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
+
+      for (const auto& jet : jets) {
+        isHFJet = false;
+        for (const auto& constituent : jet.constituents()) {
+          if (constituent.user_index() == 1 && (candidate.isSelD0() == 1 || candidate.isSelD0bar() == 1)) {
+            isHFJet = true;
+            break;
+          }
+        }
+        if (isHFJet) {
+          jetsTable(collision, jet.eta(), jet.phi(), jet.pt(),
+                    jet.area(), jet.E(), jet.m(), jetFinder.jetR);
+          for (const auto& constituent : jet.constituents()) {
+            trackConstituents(jetsTable.lastIndex(), constituent.user_index());
+          }
+          hJetPt->Fill(jet.pt());
+          std::cout << "Filling" << std::endl;
+          hD0Pt->Fill(candidate.pt());
+          break;
+        }
+      }
+    }
   }
   PROCESS_SWITCH(JetFinderHFTask, processMCD, "HF jet finding on MC detector level", false);
 
@@ -137,6 +178,7 @@ struct JetFinderHFTask {
     // TODO: retrieve pion mass from somewhere
     bool isHFJet;
 
+    // TODO: candidates should come from HF task!
     std::vector<aod::McParticle> candidates;
     for (auto const &part : particles) {
       if (std::abs(part.pdgCode()) == 421) {
@@ -149,14 +191,17 @@ struct JetFinderHFTask {
       jets.clear();
       inputParticles.clear();
       for (auto& track : particles) {
+        // TODO: check what mass to use?
         auto energy = std::sqrt(track.p() * track.p() + JetFinder::mPion * JetFinder::mPion);
-        // TODO: check use of indices
+        // TODO: check use of indices, this should be daughters!
+        // TODO: check if D0 decays at particle level
         if (std::find(std::begin(candidate.mothersIds()), std::end(candidate.mothersIds()), track.index()) != std::end(candidate.mothersIds()))
           continue;
         inputParticles.emplace_back(track.px(), track.py(), track.pz(), energy);
         inputParticles.back().set_user_index(track.globalIndex());
       }
       inputParticles.emplace_back(candidate.px(), candidate.py(), candidate.pz(), candidate.e());
+      // TODO: check use of this index, should we write to the table?
       inputParticles.back().set_user_index(1);
 
       fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
