@@ -73,6 +73,20 @@
                     _name_##constituents::_jet_type_##Id,                              \
                     _name_##constituents::EMCALClusterId);
 
+#define JET_CONSTITUENTS_ARRAY_TABLE_DEF(_jet_type_, _name_, _Description_, _track_type_) \
+  namespace _name_##constituents                                                       \
+  {                                                                                    \
+    DECLARE_SOA_INDEX_COLUMN(_jet_type_, jet);                                         \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN(_track_type_, track);                               \
+    DECLARE_SOA_INDEX_COLUMN(EMCALCluster, cluster);                                   \
+  }                                                                                    \
+  DECLARE_SOA_TABLE(_jet_type_##TrackConstituents, "AOD", _Description_ "TRKCONSTS",   \
+                    _name_##constituents::_jet_type_##Id,                              \
+                    _name_##constituents::_track_type_##Ids);                          \
+  DECLARE_SOA_TABLE(_jet_type_##ClusterConstituents, "AOD", _Description_ "CLSCONSTS", \
+                    _name_##constituents::_jet_type_##Id,                              \
+                    _name_##constituents::EMCALClusterId);
+
 // Defines the jet constituent sub table
 // NOTE: This relies on eth jet index column being defined in the constiteunts namespace.
 //       Since these are always paired together, there's no point in redefining them.
@@ -267,7 +281,7 @@ using HybridIntermediateJetConstituentSub = HybridIntermediateJetConstituentsSub
 JET_TABLE_DEF(Collision, HFJet, hfjet, "HFJET");
 using HFJet = HFJets::iterator;
 using MatchedHFJet = MatchedHFJets::iterator;
-JET_CONSTITUENTS_TABLE_DEF(HFJet, hfjet, "HFJET", Track);
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(HFJet, hfjet, "HFJET", Track);
 using HFJetTrackConstituent = HFJetTrackConstituents::iterator;
 using HFJetClusterConstituent = HFJetClusterConstituents::iterator;
 JET_CONSTITUENTS_SUB_TABLE_DEF(HFJet, hfjet, "HFJET");
@@ -278,7 +292,7 @@ using HFJetConstituentSub = HFJetConstituentsSub::iterator;
 JET_TABLE_DEF(McCollision, MCParticleLevelHFJet, mcparticlelevelhfjet, "HFJETMCP");
 using MCParticleLevelHFJet = MCParticleLevelHFJets::iterator;
 using MatchedMCParticleLevelHFJet = MatchedMCParticleLevelHFJets::iterator;
-JET_CONSTITUENTS_TABLE_DEF(MCParticleLevelHFJet, mcparticlelevelhfjet, "HFMCP", McParticle);
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCParticleLevelHFJet, mcparticlelevelhfjet, "HFMCP", McParticle);
 using MCParticleLevelHFJetTrackConstituent = MCParticleLevelHFJetTrackConstituents::iterator;
 using MCParticleLevelHFJetClusterConstituent = MCParticleLevelHFJetClusterConstituents::iterator;
 JET_CONSTITUENTS_SUB_TABLE_DEF(MCParticleLevelHFJet, mcparticlelevelhfjet, "HFMCP");
@@ -288,7 +302,7 @@ using MCParticleLevelHFJetConstituentSub = MCParticleLevelHFJetConstituentsSub::
 JET_TABLE_DEF(Collision, MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFJETMCD");
 using MCDetectorLevelHFJet = MCDetectorLevelHFJets::iterator;
 using MatchedMCDetectorLevelHFJet = MatchedMCDetectorLevelHFJets::iterator;
-JET_CONSTITUENTS_TABLE_DEF(MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFMCD", Track);
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFMCD", Track);
 using MCDetectorLevelHFJetTrackConstituent = MCDetectorLevelHFJetTrackConstituents::iterator;
 using MCDetectorLevelHFJetClusterConstituent = MCDetectorLevelHFJetClusterConstituents::iterator;
 JET_CONSTITUENTS_SUB_TABLE_DEF(MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFMCD");

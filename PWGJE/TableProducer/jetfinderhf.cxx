@@ -108,7 +108,7 @@ struct JetFinderHFTask {
           jetsTable(collision, jet.eta(), jet.phi(), jet.pt(),
                     jet.area(), jet.E(), jet.m(), jetFinder.jetR);
           for (const auto& constituent : jet.constituents()) {
-            trackConstituents(jetsTable.lastIndex(), constituent.user_index());
+            // trackConstituents(jetsTable.lastIndex(), constituent.user_index());
           }
           hJetPt->Fill(jet.pt());
           hD0Pt->Fill(candidate.pt());
@@ -146,6 +146,7 @@ struct JetFinderHFTask {
 
       for (const auto& jet : jets) {
         isHFJet = false;
+        std::vector<int> jetconst;
         for (const auto& constituent : jet.constituents()) {
           if (constituent.user_index() == 1 && (candidate.isSelD0() == 1 || candidate.isSelD0bar() == 1)) {
             isHFJet = true;
@@ -162,9 +163,10 @@ struct JetFinderHFTask {
               LOGF(info, "jet %d (coll %d) has constituent %d", jetsTable.lastIndex(), collision.globalIndex(), constituent.user_index());
               auto track = tracks.rawIteratorAt(constituent.user_index());
               LOGF(info, "constituent %d points to track %d (coll %d)", constituent.user_index(), track.globalIndex(), 0); // , track.collisionId()); // .globalIndex());
-              trackConstituents(jetsTable.lastIndex(), constituent.user_index());
+              jetconst.push_back(constituent.user_index());
             }
           }
+          trackConstituents(jetsTable.lastIndex(), jetconst);
           hJetPt->Fill(jet.pt());
           hD0Pt->Fill(candidate.pt());
           break;
@@ -211,6 +213,7 @@ struct JetFinderHFTask {
 
       for (const auto& jet : jets) {
         isHFJet = false;
+        std::vector<int> jetconst;
         for (const auto& constituent : jet.constituents()) {
           // we have only selected D0s above, so enough to test user_index ???
           if (constituent.user_index() == 1) {
@@ -222,8 +225,10 @@ struct JetFinderHFTask {
           jetsTable(collision, jet.eta(), jet.phi(), jet.pt(),
                     jet.area(), jet.E(), jet.m(), jetFinder.jetR);
           for (const auto& constituent : jet.constituents()) {
-            trackConstituents(jetsTable.lastIndex(), constituent.user_index());
+            jetconst.push_back(constituent.user_index());
+            // trackConstituents(jetsTable.lastIndex(), constituent.user_index());
           }
+          trackConstituents(jetsTable.lastIndex(), jetconst);
           hJetPt->Fill(jet.pt());
           hD0Pt->Fill(candidate.pt());
           break;
