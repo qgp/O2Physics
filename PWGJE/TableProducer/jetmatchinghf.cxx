@@ -23,14 +23,17 @@
 
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetUtilities.h"
+#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetMatchingHF {
-  using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
   using Collisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
+  using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
+  using HfCandidates = soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>;
   using DetectorLevelJets = soa::Join<aod::MCDetectorLevelHFJets, aod::MCDetectorLevelHFJetConstituents>;
   using ParticleLevelJets = soa::Join<aod::MCParticleLevelHFJets, aod::MCParticleLevelHFJetConstituents>;
 
@@ -38,39 +41,36 @@ struct JetMatchingHF {
   Produces<aod::MatchedJets> jetsRecMatching;
 
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<ParticleLevelJets> ParticleLevelJetsPerMcCollision = aod::jet::mcCollisionId;
 
   void init(InitContext const&)
   {
   }
 
-  void process(
-    Collisions::iterator collision,
-    ParticleLevelJets const& jetsMC,
-    DetectorLevelJets const& jetsRec,
-    Tracks const& tracks,
-    aod::McParticles const& particlesMC,
-    aod::McCollisions const& mcCollisions
-    )
+  void process(Collisions::iterator collision, aod::McCollisions const& mcCollisions,
+    ParticleLevelJets const& jetsMC, DetectorLevelJets const& jetsRec,
+    HfCandidates hfcandidates, Tracks const& tracks, aod::McParticles const& particlesMC)
   {
-    LOGF(info, "analysing collision %d - %d, MC collision %d", 
+    LOGF(debug, "analysing collision %d - %d, MC collision %d", 
          collision.index(), collision.globalIndex(), collision.mcCollisionId());
 
     for (const auto &t : tracks) {
-      LOGF(info, "track index: %d-%d (coll %d-%d) %s %d %d", 
+      LOGF(debug, "track index: %d-%d (coll %d-%d) with mcparticle: %d %d", 
            t.index(), t.globalIndex(), t.collisionId(), t.collision().index(),
-      t.has_mcParticle() ? "has mcp" : "has no mcp", 
-      t.has_mcParticle() ? t.mcParticle().index() : -1,
-      t.has_mcParticle() ? t.mcParticle().globalIndex() : -1);
+           t.has_mcParticle() ? t.mcParticle().index() : -1, t.has_mcParticle() ? t.mcParticle().globalIndex() : -1);
     }
 
     auto mcps = particlesMC.sliceBy(mcParticlesPerMcCollision, collision.mcCollisionId());
     for (const auto &mcp : mcps) {
-      LOGF(info, "mcparticle index: %d (MC coll %d)", mcp.globalIndex(), mcp.mcCollisionId());
+      LOGF(debug, "mcparticle index: %d (MC coll %d)", mcp.globalIndex(), mcp.mcCollisionId());
     }
 
     // match rec to MC
     for (const auto &jet : jetsRec) {
-      LOGF(info, "jet index: %d (coll %d-%d)", jet.index(), jet.collisionId(), jet.collision().index());
+      const auto &coll = jet.collision_as<Collisions>();
+      LOGF(info, "jet index: %d (coll %d-%d) with %d tracks, %d HF candidates", 
+           jet.index(), jet.collisionId(), coll.index(), jet.tracks().size(), jet.hfcandidates().size());
+
       const auto &tracks = jet.tracks_as<Tracks>();
       for (const auto &track : tracks) {
         if (!track.has_mcParticle()) {
@@ -81,6 +81,20 @@ struct JetMatchingHF {
         const auto &mcparticle = track.mcParticle();
         LOGF(info, "track %d of jet %d in coll %d-%d has mcparticle: %d-%d", 
             track.globalIndex(), jet.globalIndex(), track.collisionId(), track.collision().globalIndex(), track.mcParticleId(), mcparticle.globalIndex());
+      }
+
+      for (const auto &cand : hfcandidates) {
+        LOGF(info, "candidate %d with prongs: %d, %d", cand.globalIndex(), cand.index0Id(), cand.index1Id());
+      }
+      for (const auto id : jet.hfcandidatesIds()) {
+        const auto &cand = hfcandidates.iteratorAt(id);
+        LOGF(info, "candidate %d with prongs: %d, %d", cand.globalIndex(), 0, 0);
+      }
+      const auto &cands = jet.hfcandidates_as<HfCandidates>();
+      for (const auto &cand : cands) {
+        LOGF(info, "candidate %d-%d with prongs: %d, %d", 
+             cand.index(), cand.globalIndex(), cand.index0_as<Tracks>().globalIndex(), cand.index1_as<Tracks>().globalIndex());
+        // TODO: how to get to MC correspondence?
       }
     }
       // // should use HF candidate instead
@@ -95,7 +109,18 @@ struct JetMatchingHF {
       // }
     // }
 
-    // // match MC to rec
+    // match MC to rec
+    auto jetsPL = jetsMC.sliceBy(ParticleLevelJetsPerMcCollision, collision.mcCollisionId());
+    for (const auto &jet : jetsPL) {
+      LOGF(info, "MC jet index: %d (coll %d-%d) with %d tracks, %d HF candidates", 
+           jet.index(), jet.mcCollisionId(), jet.mcCollision().index(), jet.tracks().size(), jet.hfcandidates().size());
+      for (const auto &cand : jet.hfcandidates_as<aod::McParticles>()) {
+        const auto &daughters = cand.daughters_as<aod::McParticles>();
+        LOGF(info, "MC candidate %d-%d with prongs: %d, %d", 
+             cand.index(), cand.globalIndex(), daughters.iteratorAt(0).globalIndex(), daughters.iteratorAt(1).globalIndex());
+      }
+    }
+
     // for (const auto &c : constituentsMC) {
     //   const auto part = c.track();
     //   if (TMath::Abs(part.pdgCode()) != 421)

@@ -12,6 +12,7 @@
 // jet finder task
 //
 // Author: Nima Zardoshti
+/// \author Jochen Klein <jochen.klein@cern.ch>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -157,8 +158,6 @@ struct JetFinderHFTask {
           jetsTable(collision, jet.eta(), jet.phi(), jet.pt(),
                     jet.area(), jet.E(), jet.m(), jetFinder.jetR);
           for (const auto& constituent : jet.constituents()) {
-            // TODO: fix index for candidate
-            // requires joining track and candidates tables for constituents
             if (constituent.user_index() != 1) {
               LOGF(info, "jet %d (coll %d) has constituent %d", jetsTable.lastIndex(), collision.globalIndex(), constituent.user_index());
               auto track = tracks.rawIteratorAt(constituent.user_index());
@@ -166,6 +165,7 @@ struct JetFinderHFTask {
               trackconst.push_back(constituent.user_index());
             }
           }
+          LOGF(info, "jet %d (coll %d) has candidate %d-%d", jetsTable.lastIndex(), collision.globalIndex(), candidate.index(), candidate.globalIndex());
           candconst.push_back(candidate.globalIndex());
           trackConstituents(jetsTable.lastIndex(), trackconst, std::vector<int>(), candconst);
           hJetPt->Fill(jet.pt());
@@ -189,6 +189,7 @@ struct JetFinderHFTask {
     for (auto const &part : particles) {
       if (std::abs(part.pdgCode()) == 421) {
         candidates.push_back(part);
+        LOGF(info, "MC candidate %d -> %d", part.globalIndex(), candidates.back().globalIndex());
       }
     }
 
@@ -199,15 +200,13 @@ struct JetFinderHFTask {
       for (auto& track : particles) {
         // TODO: check what mass to use?
         auto energy = std::sqrt(track.p() * track.p() + JetFinder::mPion * JetFinder::mPion);
-        // TODO: check use of indices, this should be daughters!
         // TODO: check if D0 decays at particle level
-        if (std::find(std::begin(candidate.mothersIds()), std::end(candidate.mothersIds()), track.index()) != std::end(candidate.mothersIds()))
+        if (std::find(std::begin(candidate.daughtersIds()), std::end(candidate.daughtersIds()), track.globalIndex()) != std::end(candidate.daughtersIds()))
           continue;
         inputParticles.emplace_back(track.px(), track.py(), track.pz(), energy);
         inputParticles.back().set_user_index(track.globalIndex());
       }
       inputParticles.emplace_back(candidate.px(), candidate.py(), candidate.pz(), candidate.e());
-      // TODO: check use of this index, should we write to the table?
       inputParticles.back().set_user_index(1);
 
       fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
@@ -217,7 +216,6 @@ struct JetFinderHFTask {
         std::vector<int> trackconst;
         std::vector<int> candconst;
         for (const auto& constituent : jet.constituents()) {
-          // we have only selected D0s above, so enough to test user_index ???
           if (constituent.user_index() == 1) {
             isHFJet = true;
             break;
@@ -227,10 +225,15 @@ struct JetFinderHFTask {
           jetsTable(collision, jet.eta(), jet.phi(), jet.pt(),
                     jet.area(), jet.E(), jet.m(), jetFinder.jetR);
           for (const auto& constituent : jet.constituents()) {
+            if (constituent.user_index() == 1)
+              continue;
+            LOGF(info, "MC jet %d (MC coll %d) has constituent %d", jetsTable.lastIndex(), collision.globalIndex(), constituent.user_index());
             trackconst.push_back(constituent.user_index());
-            // trackConstituents(jetsTable.lastIndex(), constituent.user_index());
           }
+          LOGF(info, "MC jet %d (MC coll %d) has candidate %d", 
+               jetsTable.lastIndex(), collision.globalIndex(), candidates.back().globalIndex());
           candconst.push_back(candidate.globalIndex());
+          LOGF(info, "MC jet %d has %d track and %d candidate constituents", jetsTable.lastIndex(), trackconst.size(), candconst.size());
           trackConstituents(jetsTable.lastIndex(), trackconst, std::vector<int>(), candconst);
           hJetPt->Fill(jet.pt());
           hD0Pt->Fill(candidate.pt());
