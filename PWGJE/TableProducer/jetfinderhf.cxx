@@ -76,7 +76,6 @@ struct JetFinderHFTask {
                soa::Filtered<aod::Tracks> const& tracks,
                soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> const& candidates)
   {
-    std::cout << "Per Event" << std::endl;
     // TODO: retrieve pion mass from somewhere
     bool isHFJet;
 
@@ -112,7 +111,6 @@ struct JetFinderHFTask {
             trackConstituents(jetsTable.lastIndex(), constituent.user_index());
           }
           hJetPt->Fill(jet.pt());
-          std::cout << "Filling" << std::endl;
           hD0Pt->Fill(candidate.pt());
           break;
         }
@@ -126,7 +124,6 @@ struct JetFinderHFTask {
                soa::Filtered<aod::Tracks> const& tracks,
                soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> const& candidates) {
     LOG(debug) << "Per Event MCP";
-     std::cout << "Per Event" << std::endl;
     // TODO: retrieve pion mass from somewhere
     bool isHFJet;
 
@@ -159,10 +156,16 @@ struct JetFinderHFTask {
           jetsTable(collision, jet.eta(), jet.phi(), jet.pt(),
                     jet.area(), jet.E(), jet.m(), jetFinder.jetR);
           for (const auto& constituent : jet.constituents()) {
-            trackConstituents(jetsTable.lastIndex(), constituent.user_index());
+            // TODO: fix index for candidate
+            // requires joining track and candidates tables for constituents
+            if (constituent.user_index() != 1) {
+              LOGF(info, "jet %d (coll %d) has constituent %d", jetsTable.lastIndex(), collision.globalIndex(), constituent.user_index());
+              auto track = tracks.rawIteratorAt(constituent.user_index());
+              LOGF(info, "constituent %d points to track %d (coll %d)", constituent.user_index(), track.globalIndex(), 0); // , track.collisionId()); // .globalIndex());
+              trackConstituents(jetsTable.lastIndex(), constituent.user_index());
+            }
           }
           hJetPt->Fill(jet.pt());
-          std::cout << "Filling" << std::endl;
           hD0Pt->Fill(candidate.pt());
           break;
         }
@@ -222,7 +225,6 @@ struct JetFinderHFTask {
             trackConstituents(jetsTable.lastIndex(), constituent.user_index());
           }
           hJetPt->Fill(jet.pt());
-          std::cout << "Filling" << std::endl;
           hD0Pt->Fill(candidate.pt());
           break;
         }

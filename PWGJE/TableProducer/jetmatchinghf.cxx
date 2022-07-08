@@ -36,6 +36,7 @@ struct JetMatchingHF {
   {
   }
 
+  // TODO: always get all constituents
   void process(
     soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator collision,
     aod::MCParticleLevelHFJets const& jetsMC,
@@ -47,40 +48,45 @@ struct JetMatchingHF {
     aod::McCollisions const& mcCollisions
     )
   {
+    LOGF(info, "analysing collision %d - %d", 
+    collision.index(), collision.globalIndex());
     for (const auto &t : tracks) {
-      LOGF(info, "track index: %d %d %s %d %d", t.index(), t.globalIndex(),
-      t.has_mcParticle() ? "with MCP" : "no MCP", 
+      // TODO: how to access the two parts of the joined tables?
+      LOGF(info, "track index: %d (coll %d) %s %d %d", t.index(), t.collision().index(),
+      t.has_mcParticle() ? "with mcp" : "no mcp", 
       t.has_mcParticle() ? t.mcParticle().index() : -1,
       t.has_mcParticle() ? t.mcParticle().globalIndex() : -1);
     }
 
     // match rec to MC
+    // TODO: always get all constituents
     for (const auto &c : constituentsRec) {
       // TODO: check access to track
       const auto track = c.track_as<soa::Join<aod::Tracks, aod::McTrackLabels>>();
-      const auto tr = c.track_as<aod::Tracks>();
+      // const auto tr = c.track_as<aod::Tracks>();
       // tracks.rawIteratorAt(track.index());
-      LOGF(info, "tr index: %ld - %ld", track.index(), tr.index());
+      // LOGF(info, "tr index: %ld - %ld", track.index(), tr.index());
       if (!track.has_mcParticle()) {
         LOGF(warning, "No MC particle for track %d", track.index());
         continue;
       }
 
-      auto mcparticle = track.mcParticle();
-      LOGF(info, "mcparticle: %d", mcparticle.index());
+      const auto &mcparticle = track.mcParticle();
+      LOGF(info, "c track %d-%d in coll %d-%d has mcparticle: %d-%d", 
+           track.index(), track.globalIndex(), track.collisionId(), track.collision().globalIndex(), track.mcParticleId(), mcparticle.globalIndex());
+      continue;
       // should use HF candidate instead
       if (TMath::Abs(mcparticle.pdgCode()) != 421)
         continue;
-      // aod::MCParticleLevelJetTrackConstituent mc_constituent;
       for (const auto &mcc : constituentsMC) {
         if (mcc.track().index() == mcparticle.index()) {
+          LOGF(info, "matched mcd: %d - %d", c.jet().globalIndex(), mcc.jet().globalIndex());
           jetsRecMatching(c.jet().globalIndex(), mcc.jet().globalIndex());
-          // mc_constituent = mcc;
           break;
         }
       }
     }
-
+return;
     // match MC to rec
     for (const auto &c : constituentsMC) {
       const auto part = c.track();
@@ -93,6 +99,7 @@ struct JetMatchingHF {
         if (!track.has_mcParticle()) continue;
         auto mcparticle = track.mcParticle();
         if (mcparticle.index() == part.index()) {
+          LOGF(info, "matched mcp: %d - %d", c.jet().globalIndex(), rc.jet().globalIndex());
           jetsMCMatching(c.jet().globalIndex(), rc.jet().globalIndex());
           break;
         }
