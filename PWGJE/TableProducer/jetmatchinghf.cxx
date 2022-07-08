@@ -31,8 +31,8 @@ using namespace o2::framework::expressions;
 struct JetMatchingHF {
   using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
   using Collisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
-  using DetectorLevelJets = soa::Join<aod::MCDetectorLevelHFJets, aod::MCDetectorLevelHFJetTrackConstituents>;
-  using ParticleLevelJets = soa::Join<aod::MCParticleLevelHFJets, aod::MCParticleLevelHFJetTrackConstituents>;
+  using DetectorLevelJets = soa::Join<aod::MCDetectorLevelHFJets, aod::MCDetectorLevelHFJetConstituents>;
+  using ParticleLevelJets = soa::Join<aod::MCParticleLevelHFJets, aod::MCParticleLevelHFJetConstituents>;
 
   Produces<aod::MatchedMCParticleLevelJets> jetsMCMatching;
   Produces<aod::MatchedJets> jetsRecMatching;
@@ -71,7 +71,7 @@ struct JetMatchingHF {
     // match rec to MC
     for (const auto &jet : jetsRec) {
       LOGF(info, "jet index: %d (coll %d-%d)", jet.index(), jet.collisionId(), jet.collision().index());
-      const auto &tracks = jet.track_as<Tracks>();
+      const auto &tracks = jet.tracks_as<Tracks>();
       for (const auto &track : tracks) {
         if (!track.has_mcParticle()) {
           LOGF(warning, "No MC particle for track %d", track.index());
