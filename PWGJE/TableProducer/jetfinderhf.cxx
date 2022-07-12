@@ -122,12 +122,13 @@ struct JetFinderHFTask {
 
   void processMCD(aod::Collision const& collision,
                soa::Filtered<aod::Tracks> const& tracks,
-               soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> const& candidates) {
+               soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> const& candidates) {
     LOG(debug) << "Per Event MCP";
     // TODO: retrieve pion mass from somewhere
     bool isHFJet;
 
     //this loop should be made more efficient
+    // TODO: should probably refine the candidate selection
     for (auto& candidate : candidates) {
       jets.clear();
       inputParticles.clear();
@@ -177,17 +178,16 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processMCD, "HF jet finding on MC detector level", false);
 
-  // can we get the candidates from another task already?
   void processMCP(aod::McCollision const& collision,
-               aod::McParticles const& particles) {
+                  soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particles) {
     LOG(debug) << "Per Event MCP";
     // TODO: retrieve pion mass from somewhere
     bool isHFJet;
 
-    // TODO: candidates should come from HF task!
-    std::vector<aod::McParticle> candidates;
+    // TODO: probably should do this as a filter
+    std::vector<soa::Join<aod::McParticles, aod::HfCandProng2MCGen>::iterator> candidates;
     for (auto const &part : particles) {
-      if (std::abs(part.pdgCode()) == 421) {
+      if (std::abs(part.flagMCMatchGen()) & (1 << aod::hf_cand_prong2::DecayType::D0ToPiK)) {
         candidates.push_back(part);
         LOGF(info, "MC candidate %d -> %d", part.globalIndex(), candidates.back().globalIndex());
       }
