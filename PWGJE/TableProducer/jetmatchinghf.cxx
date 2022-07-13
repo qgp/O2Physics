@@ -38,8 +38,8 @@ struct JetMatchingHF {
   using DetectorLevelJets = soa::Join<aod::MCDetectorLevelHFJets, aod::MCDetectorLevelHFJetConstituents>;
   using ParticleLevelJets = soa::Join<aod::MCParticleLevelHFJets, aod::MCParticleLevelHFJetConstituents>;
 
-  Produces<aod::MatchedMCParticleLevelJets> jetsMCMatching;
-  Produces<aod::MatchedJets> jetsRecMatching;
+  Produces<aod::MatchedMCParticleDetectorLevelHFJets> jetsPartToDetMatching;
+  Produces<aod::MatchedMCDetectorParticleLevelHFJets> jetsDetToPartMatching;
 
   Preslice<ParticleLevelJets> ParticleLevelJetsPerMcCollision = aod::jet::mcCollisionId;
 
@@ -66,7 +66,7 @@ struct JetMatchingHF {
         const auto &daughter1 = cand.index1_as<Tracks>();
         const auto mother0Id = daughter0.mcParticle_as<McParticles>().mothers_as<McParticles>().front().globalIndex();
         const auto mother1Id = daughter1.mcParticle_as<McParticles>().mothers_as<McParticles>().front().globalIndex();
-        LOGF(info, "MC candidate %d with prongs: %d (MC %d), %d (MC %d)", cand.globalIndex(),
+        LOGF(debug, "MC candidate %d with prongs: %d (MC %d), %d (MC %d)", cand.globalIndex(),
              daughter0.globalIndex(), daughter0.mcParticle_as<McParticles>().globalIndex(),
              daughter1.globalIndex(), daughter1.mcParticle_as<McParticles>().globalIndex());
         LOGF(info, "MC ids of mothers: %d - %d", mother0Id, mother1Id);
@@ -77,13 +77,13 @@ struct JetMatchingHF {
                 for (const auto &cand : pjet.hfcandidates_as<McParticles>()) {
                   if (mother0Id == cand.globalIndex()) {
                     matchedIdx = pjet.globalIndex();
-                    LOGF(info, "Found matching jet %d - %d", jet.globalIndex(), matchedIdx);
+                    LOGF(info, "Found match det to part: %d -> %d", jet.globalIndex(), matchedIdx);
                   }
                 }
               }
         }
       }
-      jetsRecMatching(jet.globalIndex(), matchedIdx);
+      jetsDetToPartMatching(matchedIdx);
     }
 
     // match MC to rec
@@ -94,34 +94,41 @@ struct JetMatchingHF {
       int matchedIdx = -1;
       for (const auto &cand : jet.hfcandidates_as<McParticles>()) {
         const auto &daughters = cand.daughters_as<McParticles>();
+        LOGF(info, "MC candidate %d with daughters %d, %d", cand.globalIndex(), daughters.iteratorAt(0).globalIndex(), daughters.iteratorAt(1).globalIndex());
         int index0 = -1, index1 = -1;
         for (const auto &track : tracks) {
-          if (track.mcParticle().globalIndex() == daughters.iteratorAt(0).globalIndex()) {
+          if (!track.has_mcParticle()) continue;
+          if (track.mcParticle_as<McParticles>().globalIndex() == daughters.iteratorAt(0).globalIndex() &&
+              index0 < 0) {
             index0 = track.globalIndex();
             LOGF(info, "Found track for daughter 0: %d", index0);
           }
-          if (track.mcParticle().globalIndex() == daughters.iteratorAt(1).globalIndex()) {
+          if (track.mcParticle_as<McParticles>().globalIndex() == daughters.iteratorAt(1).globalIndex() &&
+              index1 < 0) {
             index1 = track.globalIndex();
             LOGF(info, "Found track for daughter 1: %d", index1);
           }
         }
-        int prongIdx = 0;
+        if (index0 < 0 || index1 < 0) continue;
+        int candIdx = 0;
         for (const auto &prong : hfcandidates) {
-          if ((prong.index0Id() == index0 && prong.index1Id())) {
-            prongIdx = prong.globalIndex();
-            LOGF(info, "Found matching 2prong: %d", prongIdx);
+          LOGF(info, "checking prong %d with daughters %d-%d, %d-%d", 
+               prong.globalIndex(), prong.index0Id(), prong.index0_as<Tracks>().globalIndex(), prong.index1Id(), prong.index1_as<Tracks>().globalIndex());
+          if ((prong.index0_as<Tracks>().globalIndex() == index0 && prong.index1_as<Tracks>().globalIndex() == index1) ||
+              (prong.index0Id() == index1 && prong.index1Id() == index0)) {
+            candIdx = prong.globalIndex();
+            LOGF(info, "Found matching 2prong candidate: %d", candIdx);
           }
         }
         for (const auto &djet : jetsRec) {
-          if (djet.hfcandidates_as<HfCandidates>().front().globalIndex() == prongIdx) {
+          if (djet.hfcandidates_as<HfCandidates>().front().globalIndex() == candIdx) {
             matchedIdx = djet.globalIndex();
-            LOGF(info, "Found matching jet %d", matchedIdx);
+            LOGF(info, "Found match part to det: %d -> %d", jet.globalIndex(), matchedIdx);
           }
         }
       }
-      jetsMCMatching(jet.globalIndex(), matchedIdx);
+      jetsPartToDetMatching(matchedIdx);
     }
-
   }
 };
 

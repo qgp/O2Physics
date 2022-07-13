@@ -311,8 +311,8 @@ using MCDetectorLevelHFJetConstituentSub = MCDetectorLevelHFJetConstituentsSub::
 // namespace mcparticlelevelhfjetmatching {
 //   DECLARE_SOA_INDEX_COLUMN(MCParticleLevelHFJet, jet);
 // }
-// DECLARE_SOA_TABLE(MatchedMCParticleLevelHFJets, "AOD", "HFJETMCPMATCH", mcdetectorlevelhfjetmatching::MCDetectorLevelHFJetId);
-// DECLARE_SOA_TABLE(MatchedMCDetectorLevelHFJets, "AOD", "HFJETMCDMATCH", mcparticlelevelhfjetmatching::MCParticleLevelHFJetId);
+DECLARE_SOA_TABLE(MatchedMCParticleDetectorLevelHFJets, "AOD", "HFJETMCPDMATCH", mcdetectorlevelhfjetmatching::MCDetectorLevelHFJetId);
+DECLARE_SOA_TABLE(MatchedMCDetectorParticleLevelHFJets, "AOD", "HFJETMCDPMATCH", mcparticlelevelhfjetmatching::MCParticleLevelHFJetId);
 
 } // namespace o2::aod
 
