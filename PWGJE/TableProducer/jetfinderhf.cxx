@@ -158,7 +158,8 @@ struct JetFinderHFTask {
         if (isHFJet) {
           jetsTable(collision, jet.eta(), jet.phi(), jet.pt(),
                     jet.area(), jet.E(), jet.m(), jetFinder.jetR);
-          for (const auto& constituent : jet.constituents()) {
+          const auto &constituents = sorted_by_pt(jet.constituents());
+          for (const auto& constituent : constituents) {
             if (constituent.user_index() != 1) {
               LOGF(info, "jet %d (coll %d) has constituent %d", jetsTable.lastIndex(), collision.globalIndex(), constituent.user_index());
               auto track = tracks.rawIteratorAt(constituent.user_index());
@@ -187,6 +188,7 @@ struct JetFinderHFTask {
     // TODO: probably should do this as a filter
     std::vector<soa::Join<aod::McParticles, aod::HfCandProng2MCGen>::iterator> candidates;
     for (auto const &part : particles) {
+      // TODO: generalise to any D0
       if (std::abs(part.flagMCMatchGen()) & (1 << aod::hf_cand_prong2::DecayType::D0ToPiK)) {
         candidates.push_back(part);
         LOGF(info, "MC candidate %d -> %d", part.globalIndex(), candidates.back().globalIndex());
@@ -230,7 +232,7 @@ struct JetFinderHFTask {
             LOGF(info, "MC jet %d (MC coll %d) has constituent %d", jetsTable.lastIndex(), collision.globalIndex(), constituent.user_index());
             trackconst.push_back(constituent.user_index());
           }
-          LOGF(info, "MC jet %d (MC coll %d) has candidate %d", 
+          LOGF(info, "MC jet %d (MC coll %d) has candidate %d",
                jetsTable.lastIndex(), collision.globalIndex(), candidates.back().globalIndex());
           candconst.push_back(candidate.globalIndex());
           LOGF(info, "MC jet %d has %d track and %d candidate constituents", jetsTable.lastIndex(), trackconst.size(), candconst.size());
@@ -254,7 +256,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   std::vector<o2::framework::DataProcessorSpec> tasks;
 
   auto hfjetMode = cfgc.options().get<std::string>("hfjetMode");
-  
+
   if (hfjetMode.find("data") != std::string::npos)
     tasks.emplace_back(adaptAnalysisTask<JetFinderHF>(cfgc,
       SetDefaultProcesses{{{"processData", true}, {"processMCP", false}, {"processMCD", false}}},

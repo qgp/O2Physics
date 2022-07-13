@@ -279,9 +279,6 @@ JET_CONSTITUENTS_SUB_TABLE_DEF(HybridIntermediateJet, hybridintermediate, "HYBIN
 using HybridIntermediateJetConstituentSub = HybridIntermediateJetConstituentsSub::iterator;
 
 // HF jets
-// TODO: generalise HfCandProng2
-
-// HF jets (data)
 JET_TABLE_DEF(Collision, HFJet, hfjet, "HFJET");
 using HFJet = HFJets::iterator;
 using MatchedHFJet = MatchedHFJets::iterator;
@@ -291,7 +288,6 @@ JET_CONSTITUENTS_SUB_TABLE_DEF(HFJet, hfjet, "HFJET");
 using HFJetConstituentSub = HFJetConstituentsSub::iterator;
 
 // HF jets (MC particle level)
-// HFJETMCPART ??? too long for const char[16]
 JET_TABLE_DEF(McCollision, MCParticleLevelHFJet, mcparticlelevelhfjet, "HFJETMCP");
 using MCParticleLevelHFJet = MCParticleLevelHFJets::iterator;
 using MatchedMCParticleLevelHFJet = MatchedMCParticleLevelHFJets::iterator;
@@ -308,6 +304,15 @@ JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HF
 using MCDetectorLevelHFJetConstituent = MCDetectorLevelHFJetConstituents::iterator;
 JET_CONSTITUENTS_SUB_TABLE_DEF(MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFMCD");
 using MCDetectorLevelHFJetConstituentSub = MCDetectorLevelHFJetConstituentsSub::iterator;
+
+// namespace mcdetectorlevelhfjetmatching {
+//   DECLARE_SOA_INDEX_COLUMN(MCDetectorLevelHFJet, jet);
+// }
+// namespace mcparticlelevelhfjetmatching {
+//   DECLARE_SOA_INDEX_COLUMN(MCParticleLevelHFJet, jet);
+// }
+// DECLARE_SOA_TABLE(MatchedMCParticleLevelHFJets, "AOD", "HFJETMCPMATCH", mcdetectorlevelhfjetmatching::MCDetectorLevelHFJetId);
+// DECLARE_SOA_TABLE(MatchedMCDetectorLevelHFJets, "AOD", "HFJETMCDMATCH", mcparticlelevelhfjetmatching::MCParticleLevelHFJetId);
 
 } // namespace o2::aod
 
