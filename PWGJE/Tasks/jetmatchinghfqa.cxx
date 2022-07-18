@@ -20,18 +20,35 @@
 #include "Framework/runDataProcessing.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "PWGJE/DataModel/Jet.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetMatchingHFQA {
+  using DetectorLevelJets = soa::Join<aod::MCDetectorLevelHFJets, aod::MCDetectorLevelHFJetConstituents, aod::MatchedMCDetectorParticleLevelHFJets>;
+  using ParticleLevelJets = soa::Join<aod::MCParticleLevelHFJets, aod::MCParticleLevelHFJetConstituents, aod::MatchedMCParticleDetectorLevelHFJets>;
+
+  OutputObj<TH2F> hJetPt{"h_jet_pt"};
+
   void init(InitContext const&)
   {
+    hJetPt.setObject(new TH2F("h_jet_pt", "HF-matched jets;jet p_{T}^{gen} (GeV/#it{c});jet p_{T}^{det} (GeV/#it{c})",
+                              100, 0., 100., 100, 0., 100.));
   }
 
-  void process(aod::Collisions::iterator collision)
+  void process(aod::Collisions::iterator const& collision,
+               DetectorLevelJets const& djets, ParticleLevelJets const& pjets)
   {
+    for (const auto &djet : djets) {
+      if (djet.has_matchedJet() && djet.matchedJetId() >= 0) {
+        const auto &pjet = djet.matchedJet_as<ParticleLevelJets>();
+        LOGF(info, "jet %d (pt of %g GeV/c) is matched to %d (pt of %g GeV/c)", 
+             djet.globalIndex(), djet.pt(), djet.matchedJetId(), pjet.pt());
+        hJetPt->Fill(pjet.pt(), djet.pt());
+      }
+    }
   }
 };
 

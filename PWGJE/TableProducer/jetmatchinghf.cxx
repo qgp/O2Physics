@@ -47,17 +47,17 @@ struct JetMatchingHF {
   {
   }
 
-  void process(Collisions::iterator collision, aod::McCollisions const& mcCollisions,
+  void process(Collisions::iterator const& collision, aod::McCollisions const& mcCollisions,
     ParticleLevelJets const& jetsMC, DetectorLevelJets const& jetsRec,
-    HfCandidates hfcandidates, Tracks const& tracks,
+    HfCandidates const& hfcandidates, Tracks const& tracks,
     McParticles const& particlesMC)
   {
     const auto jetsPL = jetsMC.sliceBy(ParticleLevelJetsPerMcCollision, collision.mcCollisionId());
 
     // match rec to MC
     for (const auto &jet : jetsRec) {
-      LOGF(info, "jet index: %d (coll %d) with %d tracks, %d HF candidates",
-           jet.index(), jet.collisionId(), jet.tracks().size(), jet.hfcandidates().size());
+      LOGF(info, "jet index: %d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
+           jet.index(), jet.collisionId(), jet.pt(), jet.phi(), jet.tracks().size(), jet.hfcandidates().size());
 
       const auto &cands = jet.hfcandidates_as<HfCandidates>();
       int matchedIdx = -1;
@@ -77,7 +77,8 @@ struct JetMatchingHF {
                 for (const auto &cand : pjet.hfcandidates_as<McParticles>()) {
                   if (mother0Id == cand.globalIndex()) {
                     matchedIdx = pjet.globalIndex();
-                    LOGF(info, "Found match det to part: %d -> %d", jet.globalIndex(), matchedIdx);
+                    LOGF(info, "Found match det to part: %d (pt %g) -> %d (pt %g)", 
+                         jet.globalIndex(), jet.pt(), matchedIdx, pjet.pt());
                   }
                 }
               }

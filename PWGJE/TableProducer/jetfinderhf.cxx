@@ -106,7 +106,7 @@ struct JetFinderHFTask {
           }
         }
         if (isHFJet) {
-          jetsTable(collision, jet.eta(), jet.phi(), jet.pt(),
+          jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
                     jet.area(), jet.E(), jet.m(), jetFinder.jetR);
           for (const auto& constituent : jet.constituents()) {
             // trackConstituents(jetsTable.lastIndex(), constituent.user_index());
@@ -156,7 +156,7 @@ struct JetFinderHFTask {
           }
         }
         if (isHFJet) {
-          jetsTable(collision, jet.eta(), jet.phi(), jet.pt(),
+          jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
                     jet.area(), jet.E(), jet.m(), jetFinder.jetR);
           const auto &constituents = sorted_by_pt(jet.constituents());
           for (const auto& constituent : constituents) {
@@ -224,7 +224,7 @@ struct JetFinderHFTask {
           }
         }
         if (isHFJet) {
-          jetsTable(collision, jet.eta(), jet.phi(), jet.pt(),
+          jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
                     jet.area(), jet.E(), jet.m(), jetFinder.jetR);
           for (const auto& constituent : jet.constituents()) {
             if (constituent.user_index() == 1)

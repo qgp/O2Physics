@@ -305,14 +305,14 @@ using MCDetectorLevelHFJetConstituent = MCDetectorLevelHFJetConstituents::iterat
 JET_CONSTITUENTS_SUB_TABLE_DEF(MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFMCD");
 using MCDetectorLevelHFJetConstituentSub = MCDetectorLevelHFJetConstituentsSub::iterator;
 
-// namespace mcdetectorlevelhfjetmatching {
-//   DECLARE_SOA_INDEX_COLUMN(MCDetectorLevelHFJet, jet);
-// }
-// namespace mcparticlelevelhfjetmatching {
-//   DECLARE_SOA_INDEX_COLUMN(MCParticleLevelHFJet, jet);
-// }
-DECLARE_SOA_TABLE(MatchedMCParticleDetectorLevelHFJets, "AOD", "HFJETMCPDMATCH", mcdetectorlevelhfjetmatching::MCDetectorLevelHFJetId);
-DECLARE_SOA_TABLE(MatchedMCDetectorParticleLevelHFJets, "AOD", "HFJETMCDPMATCH", mcparticlelevelhfjetmatching::MCParticleLevelHFJetId);
+namespace mcdetectorlevelhfjetmatching2 {
+  DECLARE_SOA_INDEX_COLUMN(MCDetectorLevelHFJet, matchedJet);
+}
+namespace mcparticlelevelhfjetmatching2 {
+  DECLARE_SOA_INDEX_COLUMN(MCParticleLevelHFJet, matchedJet);
+}
+DECLARE_SOA_TABLE(MatchedMCParticleDetectorLevelHFJets, "AOD", "HFJETMCPDMATCH", mcdetectorlevelhfjetmatching2::MCDetectorLevelHFJetId);
+DECLARE_SOA_TABLE(MatchedMCDetectorParticleLevelHFJets, "AOD", "HFJETMCDPMATCH", mcparticlelevelhfjetmatching2::MCParticleLevelHFJetId);
 
 } // namespace o2::aod
 
