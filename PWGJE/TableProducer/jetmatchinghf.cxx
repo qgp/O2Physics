@@ -64,6 +64,10 @@ struct JetMatchingHF {
       for (const auto &cand : cands) {
         const auto &daughter0 = cand.index0_as<Tracks>();
         const auto &daughter1 = cand.index1_as<Tracks>();
+        if (!daughter0.has_mcParticle() || !daughter1.has_mcParticle()) {
+          LOGF(warning, "Encountered candidate daughter (%d or %d) without MC particle", daughter0.globalIndex(), daughter1.globalIndex());
+          continue;
+        }
         const auto mother0Id = daughter0.mcParticle_as<McParticles>().mothers_as<McParticles>().front().globalIndex();
         const auto mother1Id = daughter1.mcParticle_as<McParticles>().mothers_as<McParticles>().front().globalIndex();
         LOGF(debug, "MC candidate %d with prongs: %d (MC %d), %d (MC %d)", cand.globalIndex(),
