@@ -17,6 +17,11 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
+#include "TDatabasePDG.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
@@ -50,7 +55,12 @@ struct JetFinderHFTask {
   Produces<JetTable> jetsTable;
   Produces<TrackConstituentTable> trackConstituents;
   OutputObj<TH1F> hJetPt{"h_jet_pt"};
+  OutputObj<TH1F> hJetPtTrue{"h_jet_pt_true"};
   OutputObj<TH1F> hD0Pt{"h_D0_pt"};
+
+  Service<TDatabasePDG> pdg;
+
+  TrackSelection globalTracks;
 
   std::vector<fastjet::PseudoJet> jets;
   std::vector<fastjet::PseudoJet> inputParticles;
@@ -58,7 +68,11 @@ struct JetFinderHFTask {
 
   void init(InitContext const&)
   {
+    globalTracks = getGlobalTrackSelection(); // TODO: check what the default selection is
+
     hJetPt.setObject(new TH1F("h_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
+                              100, 0., 100.));
+    hJetPtTrue.setObject(new TH1F("h_jet_pt_true", "jet p_{T};p_{T} (GeV/#it{c})",
                               100, 0., 100.));
     hD0Pt.setObject(new TH1F("h_D0_pt", "jet p_{T,D};p_{T,D} (GeV/#it{c})",
                              60, 0., 60.));
@@ -71,6 +85,7 @@ struct JetFinderHFTask {
   enum pdgCode { pdgD0 = 421 };
 
   Filter trackCuts = (aod::track::pt > 0.15f && aod::track::eta > -0.9f && aod::track::eta < 0.9f);
+  Filter partCuts = (aod::mcparticle::pt > 0.15f && aod::mcparticle::eta > -0.9f && aod::mcparticle::eta < 0.9f);
   Filter seltrack = (aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar);
 
   void processData(aod::Collision const& collision,
@@ -107,10 +122,10 @@ struct JetFinderHFTask {
         }
         if (isHFJet) {
           jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
-                    jet.area(), jet.E(), jet.m(), jetFinder.jetR);
-          for (const auto& constituent : jet.constituents()) {
+                    jet.E(), jet.m(), jet.area(), jetFinder.jetR);
+          // for (const auto& constituent : jet.constituents()) {
             // trackConstituents(jetsTable.lastIndex(), constituent.user_index());
-          }
+          // }
           hJetPt->Fill(jet.pt());
           hD0Pt->Fill(candidate.pt());
           break;
@@ -121,7 +136,8 @@ struct JetFinderHFTask {
   PROCESS_SWITCH(JetFinderHFTask, processData, "HF jet finding on data", true);
 
   void processMCD(aod::Collision const& collision,
-               soa::Filtered<aod::Tracks> const& tracks,
+               soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>> const& tracks, 
+              //  soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, aod::McParticles const& particles,
                soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> const& candidates) {
     LOG(debug) << "Per Event MCP";
     // TODO: retrieve pion mass from somewhere
@@ -133,10 +149,16 @@ struct JetFinderHFTask {
       jets.clear();
       inputParticles.clear();
       for (auto& track : tracks) {
-        auto energy = std::sqrt(track.p() * track.p() + JetFinder::mPion * JetFinder::mPion);
-        if (candidate.index0().globalIndex() == track.globalIndex() || candidate.index1().globalIndex() == track.globalIndex()) { //is it global index?
+        if (!globalTracks.IsSelected(track)) {
+          LOGF(info, "Rejecting track %d with track cuts", track.globalIndex());
           continue;
         }
+        if (candidate.index0().globalIndex() == track.globalIndex() || candidate.index1().globalIndex() == track.globalIndex()) {
+          LOGF(info, "Rejecting track %d as daughter of candidate %d", track.globalIndex(), candidate.globalIndex());
+          continue;
+        }
+        // LOGF(info, "Adding track %d with pt %g", track.globalIndex(), track.pt());
+        auto energy = std::sqrt(track.p() * track.p() + JetFinder::mPion * JetFinder::mPion);
         inputParticles.emplace_back(track.px(), track.py(), track.pz(), energy);
         inputParticles.back().set_user_index(track.globalIndex());
       }
@@ -157,7 +179,7 @@ struct JetFinderHFTask {
         }
         if (isHFJet) {
           jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
-                    jet.area(), jet.E(), jet.m(), jetFinder.jetR);
+                    jet.E(), jet.m(), jet.area(), jetFinder.jetR);
           const auto &constituents = sorted_by_pt(jet.constituents());
           for (const auto& constituent : constituents) {
             if (constituent.user_index() != 1) {
@@ -171,6 +193,7 @@ struct JetFinderHFTask {
           candconst.push_back(candidate.globalIndex());
           trackConstituents(jetsTable.lastIndex(), trackconst, std::vector<int>(), candconst);
           hJetPt->Fill(jet.pt());
+          if (candidate.flagMCMatchRec() & (1 << aod::hf_cand_prong2::DecayType::D0ToPiK)) hJetPtTrue->Fill(jet.pt());
           hD0Pt->Fill(candidate.pt());
           break;
         }
@@ -180,13 +203,13 @@ struct JetFinderHFTask {
   PROCESS_SWITCH(JetFinderHFTask, processMCD, "HF jet finding on MC detector level", false);
 
   void processMCP(aod::McCollision const& collision,
-                  soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particles) {
+                  soa::Filtered<soa::Join<aod::McParticles, aod::HfCandProng2MCGen>> const& particles) {
     LOG(debug) << "Per Event MCP";
     // TODO: retrieve pion mass from somewhere
     bool isHFJet;
 
     // TODO: probably should do this as a filter
-    std::vector<soa::Join<aod::McParticles, aod::HfCandProng2MCGen>::iterator> candidates;
+    std::vector<soa::Filtered<soa::Join<aod::McParticles, aod::HfCandProng2MCGen>>::iterator> candidates;
     for (auto const &part : particles) {
       // TODO: generalise to any D0
       if (std::abs(part.flagMCMatchGen()) & (1 << aod::hf_cand_prong2::DecayType::D0ToPiK)) {
@@ -200,11 +223,24 @@ struct JetFinderHFTask {
       jets.clear();
       inputParticles.clear();
       for (auto& track : particles) {
+        // exclude neutral particles
+        // TODO: can we do this through the filter?
+        auto p = pdg->GetParticle(track.pdgCode());
+        // LOGF(info, "Checking particle %i with status %d and charge %g", 
+        //   track.globalIndex(), track.getGenStatusCode(), p ? std::abs(p->Charge()) : -999.);
+        if ((track.getGenStatusCode() != 1) || (p ? std::abs(p->Charge()) : 0.) < 3.) {
+          LOGF(info, "Rejecting particle %d with status %d and charge %g", track.globalIndex(), track.getGenStatusCode(), p ? std::abs(p->Charge()) : -999.);
+          continue;
+        }
+
         // TODO: check what mass to use?
         auto energy = std::sqrt(track.p() * track.p() + JetFinder::mPion * JetFinder::mPion);
-        // TODO: check if D0 decays at particle level
-        if (std::find(std::begin(candidate.daughtersIds()), std::end(candidate.daughtersIds()), track.globalIndex()) != std::end(candidate.daughtersIds()))
+        const auto daughters = candidate.daughtersIds();
+        if (std::find(std::begin(daughters), std::end(daughters), track.globalIndex()) != std::end(daughters)) {
+          LOGF(info, "Rejecting particle %d as daughter of candidate %d", track.globalIndex(), candidate.globalIndex());
           continue;
+        }
+        // LOGF(info, "Adding particle %d with pt %g", track.globalIndex(), track.pt());
         inputParticles.emplace_back(track.px(), track.py(), track.pz(), energy);
         inputParticles.back().set_user_index(track.globalIndex());
       }
@@ -225,7 +261,7 @@ struct JetFinderHFTask {
         }
         if (isHFJet) {
           jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
-                    jet.area(), jet.E(), jet.m(), jetFinder.jetR);
+                    jet.E(), jet.m(), jet.area(), jetFinder.jetR);
           for (const auto& constituent : jet.constituents()) {
             if (constituent.user_index() == 1)
               continue;

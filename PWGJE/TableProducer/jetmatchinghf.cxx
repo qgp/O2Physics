@@ -61,6 +61,10 @@ struct JetMatchingHF {
 
       const auto &cands = jet.hfcandidates_as<HfCandidates>();
       int matchedIdx = -1;
+      if (cands.front().flagMCMatchRec() & (1 << aod::hf_cand_prong2::DecayType::D0ToPiK) == 0) {
+        jetsDetToPartMatching(matchedIdx);
+        continue;
+      }
       for (const auto &cand : cands) {
         const auto &daughter0 = cand.index0_as<Tracks>();
         const auto &daughter1 = cand.index1_as<Tracks>();

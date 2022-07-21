@@ -31,11 +31,14 @@ struct JetMatchingHFQA {
   using ParticleLevelJets = soa::Join<aod::MCParticleLevelHFJets, aod::MCParticleLevelHFJetConstituents, aod::MatchedMCParticleDetectorLevelHFJets>;
 
   OutputObj<TH2F> hJetPt{"h_jet_pt"};
+  OutputObj<TH2F> hJetDetaDphi{"h_jet_deta_dphi"};
 
   void init(InitContext const&)
   {
     hJetPt.setObject(new TH2F("h_jet_pt", "HF-matched jets;jet p_{T}^{gen} (GeV/#it{c});jet p_{T}^{det} (GeV/#it{c})",
                               100, 0., 100., 100, 0., 100.));
+    hJetDetaDphi.setObject(new TH2F("h_jet_deta_dphi", "HF-matched jets;jet #Delta#phi;#Delta#eta",
+                                    100, -2.*TMath::Pi(), 2.*TMath::Pi(), 100, -2., 2.));
   }
 
   void process(aod::Collisions::iterator const& collision,
@@ -47,6 +50,8 @@ struct JetMatchingHFQA {
         LOGF(info, "jet %d (pt of %g GeV/c) is matched to %d (pt of %g GeV/c)", 
              djet.globalIndex(), djet.pt(), djet.matchedJetId(), pjet.pt());
         hJetPt->Fill(pjet.pt(), djet.pt());
+        const auto dphi = -TMath::Pi() + fmod(2*TMath::Pi() + fmod(djet.phi() - pjet.phi() + TMath::Pi(), 2*TMath::Pi()), 2*TMath::Pi());
+        hJetDetaDphi->Fill(dphi, djet.eta() - pjet.eta());
       }
     }
   }
