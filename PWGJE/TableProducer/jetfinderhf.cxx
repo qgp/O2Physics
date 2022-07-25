@@ -21,6 +21,7 @@
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
@@ -88,12 +89,14 @@ struct JetFinderHFTask {
   Filter partCuts = (aod::mcparticle::pt > 0.15f && aod::mcparticle::eta > -0.9f && aod::mcparticle::eta < 0.9f);
   Filter seltrack = (aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar);
 
-  void processData(aod::Collision const& collision,
+  void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                soa::Filtered<aod::Tracks> const& tracks,
                soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> const& candidates)
   {
     // TODO: retrieve pion mass from somewhere
     bool isHFJet;
+
+    if (!collision.sel8()) return;
 
     //this loop should be made more efficient
     for (auto& candidate : candidates) {
@@ -137,7 +140,6 @@ struct JetFinderHFTask {
 
   void processMCD(aod::Collision const& collision,
                soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>> const& tracks, 
-              //  soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, aod::McParticles const& particles,
                soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> const& candidates) {
     LOG(debug) << "Per Event MCP";
     // TODO: retrieve pion mass from somewhere
