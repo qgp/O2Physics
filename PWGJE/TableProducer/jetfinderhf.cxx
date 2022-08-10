@@ -69,7 +69,9 @@ struct JetFinderHFTask {
 
   void init(InitContext const&)
   {
-    globalTracks = getGlobalTrackSelection(); // TODO: check what the default selection is
+    // set up global tracks and adjust as necessary
+    globalTracks = getGlobalTrackSelection();
+    globalTracks.SetEtaRange(-.9, .9);
 
     hJetPt.setObject(new TH1F("h_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
                               100, 0., 100.));
@@ -138,7 +140,7 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processData, "HF jet finding on data", true);
 
-  void processMCD(aod::Collision const& collision,
+  void processMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>> const& tracks, 
                soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> const& candidates) {
     LOG(debug) << "Per Event MCP";
