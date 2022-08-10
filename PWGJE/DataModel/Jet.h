@@ -75,17 +75,17 @@
                     _name_##constituents::EMCALClusterId);
 
 #define JET_CONSTITUENTS_ARRAY_TABLE_DEF(_jet_type_, _name_, _Description_, _track_type_, _cand_type_) \
-  namespace _name_##constituents                                                       \
-  {                                                                                    \
-    DECLARE_SOA_INDEX_COLUMN(_jet_type_, jet);                                         \
-    DECLARE_SOA_ARRAY_INDEX_COLUMN(_track_type_, tracks);                              \
-    DECLARE_SOA_ARRAY_INDEX_COLUMN(EMCALCluster, clusters);                            \
-    DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL(HfCandidates, hfcandidates, int32_t, _cand_type_, "_hfcand");\
-  }                                                                                    \
-  DECLARE_SOA_TABLE(_jet_type_##Constituents, "AOD", _Description_ "CONSTS",           \
-                    _name_##constituents::_jet_type_##Id,                              \
-                    _name_##constituents::_track_type_##Ids,                           \
-                    _name_##constituents::EMCALClusterIds,                             \
+  namespace _name_##constituents                                                                       \
+  {                                                                                                    \
+    DECLARE_SOA_INDEX_COLUMN(_jet_type_, jet);                                                         \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN(_track_type_, tracks);                                              \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN(EMCALCluster, clusters);                                            \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL(HfCandidates, hfcandidates, int32_t, _cand_type_, "_hfcand");  \
+  }                                                                                                    \
+  DECLARE_SOA_TABLE(_jet_type_##Constituents, "AOD", _Description_ "CONSTS",                           \
+                    _name_##constituents::_jet_type_##Id,                                              \
+                    _name_##constituents::_track_type_##Ids,                                           \
+                    _name_##constituents::EMCALClusterIds,                                             \
                     _name_##constituents::HfCandidatesIds);
 
 // Defines the jet constituent sub table
@@ -305,11 +305,13 @@ using MCDetectorLevelHFJetConstituent = MCDetectorLevelHFJetConstituents::iterat
 JET_CONSTITUENTS_SUB_TABLE_DEF(MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFMCD");
 using MCDetectorLevelHFJetConstituentSub = MCDetectorLevelHFJetConstituentsSub::iterator;
 
-namespace mcdetectorlevelhfjetmatching2 {
-  DECLARE_SOA_INDEX_COLUMN(MCDetectorLevelHFJet, matchedJet);
+namespace mcdetectorlevelhfjetmatching2
+{
+DECLARE_SOA_INDEX_COLUMN(MCDetectorLevelHFJet, matchedJet);
 }
-namespace mcparticlelevelhfjetmatching2 {
-  DECLARE_SOA_INDEX_COLUMN(MCParticleLevelHFJet, matchedJet);
+namespace mcparticlelevelhfjetmatching2
+{
+DECLARE_SOA_INDEX_COLUMN(MCParticleLevelHFJet, matchedJet);
 }
 DECLARE_SOA_TABLE(MatchedMCParticleDetectorLevelHFJets, "AOD", "HFJETMCPDMATCH", mcdetectorlevelhfjetmatching2::MCDetectorLevelHFJetId);
 DECLARE_SOA_TABLE(MatchedMCDetectorParticleLevelHFJets, "AOD", "HFJETMCDPMATCH", mcparticlelevelhfjetmatching2::MCParticleLevelHFJetId);
