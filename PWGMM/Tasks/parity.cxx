@@ -26,7 +26,7 @@ using namespace o2::framework::expressions;
 #include "Framework/runDataProcessing.h"
 
 struct ParityTask {
-  OutputObj<TH1F> hDet{"h_det"};
+  OutputObj<TH1F> hPt{"h_pt"};
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> trackPtCut{"trackPtCut", 0.1, "minimum track pT"};
@@ -37,8 +37,8 @@ struct ParityTask {
 
   void init(InitContext const&)
   {
-    hDet.setObject(new TH1F("h_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
-                              100, 0., 100.));
+    hPt.setObject(new TH1F("h_pt", "p_{T};p_{T} (GeV/#it{c})",
+			    100, 0., 100.));
   }
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, aod::Tracks const& tracks)
@@ -47,6 +47,7 @@ struct ParityTask {
 
     for (const auto &track : tracks) {
         LOG(debug) << "track pt" << track.pt();
+	hPt->Fill(track.pt());
     }
   }
 };
