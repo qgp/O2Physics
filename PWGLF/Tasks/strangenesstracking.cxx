@@ -28,18 +28,18 @@ struct StrangenessTrackingTask {
 
   OutputObj<TH1F> hDCA{"h_DCA"};
 
-  float Square(float x) { return x*x; }
+  float Square(float x) { return x * x; }
 
   void init(InitContext const&)
   {
     hDCA.setObject(new TH1F("h_dca", "DCA;DCA (cm)", 200, -2., 2.));
   }
 
-  void processTrackedCascades(aod::Collision const& collision, 
-    aod::TrackedCascades const &trackedCascades, aod::Cascades const &cascades,
-    aod::V0s const &v0s, TracksExt const &tracks, aod::McParticles const &mcParticles)
+  void processTrackedCascades(aod::Collision const& collision,
+                              aod::TrackedCascades const& trackedCascades, aod::Cascades const& cascades,
+                              aod::V0s const& v0s, TracksExt const& tracks, aod::McParticles const& mcParticles)
   {
-    for (const auto &trackedCascade : trackedCascades) {
+    for (const auto& trackedCascade : trackedCascades) {
       auto trackCovTrk = getTrackParCov(trackedCascade.track_as<TracksExt>());
       auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();
@@ -48,42 +48,42 @@ struct StrangenessTrackingTask {
 
       hDCA->Fill(impactParameterTrk.getY());
 
-      const auto &casc = trackedCascade.cascade();
-      const auto &bachelor = casc.bachelor_as<TracksExt>();
-      const auto &v0 = casc.v0();
-      const auto &ptrack = v0.posTrack_as<TracksExt>();
-      const auto &ntrack = v0.negTrack_as<TracksExt>();
+      const auto& casc = trackedCascade.cascade();
+      const auto& bachelor = casc.bachelor_as<TracksExt>();
+      const auto& v0 = casc.v0();
+      const auto& ptrack = v0.posTrack_as<TracksExt>();
+      const auto& ntrack = v0.negTrack_as<TracksExt>();
 
-      if (ptrack.mcParticle().has_mothers() && ntrack.mcParticle().has_mothers() && 
+      if (ptrack.mcParticle().has_mothers() && ntrack.mcParticle().has_mothers() &&
           ptrack.mcParticle().mothersIds()[0] == ntrack.mcParticle().mothersIds()[0]) {
-            const auto &v0part = ptrack.mcParticle().mothers_as<aod::McParticles>()[0];
-            if (v0part.has_mothers() && bachelor.mcParticle().has_mothers() &&
-                v0part.mothersIds()[0] == bachelor.mcParticle().mothersIds()[0])
-                LOG(debug) << "cascade with PDG code: " << v0part.mothers_as<aod::McParticles>()[0].pdgCode();
+        const auto& v0part = ptrack.mcParticle().mothers_as<aod::McParticles>()[0];
+        if (v0part.has_mothers() && bachelor.mcParticle().has_mothers() &&
+            v0part.mothersIds()[0] == bachelor.mcParticle().mothersIds()[0])
+          LOG(debug) << "cascade with PDG code: " << v0part.mothers_as<aod::McParticles>()[0].pdgCode();
       }
     }
   }
   PROCESS_SWITCH(StrangenessTrackingTask, processTrackedCascades, "process tracked cascades", true);
 
-  void processTrackedV0s(aod::Collision const& collision, 
-    aod::TrackedV0s const &trackedV0s, aod::V0s const &v0s,
-    TracksExt const &tracks, aod::McParticles const &mcParticles)
+  void processTrackedV0s(aod::Collision const& collision,
+                         aod::TrackedV0s const& trackedV0s, aod::V0s const& v0s,
+                         TracksExt const& tracks, aod::McParticles const& mcParticles)
   {
-    for (const auto &trackedV0 : trackedV0s) {
-      const auto &v0 = trackedV0.v0();
+    for (const auto& trackedV0 : trackedV0s) {
+      const auto& v0 = trackedV0.v0();
       v0.posTrack();
       v0.negTrack();
     }
   }
   PROCESS_SWITCH(StrangenessTrackingTask, processTrackedV0s, "process tracked V0s", true);
 
-  void processTracked3Bodys(aod::Collision const& collision, 
-    aod::Tracked3Bodys const &tracked3Bodys, aod::Decay3Bodys const &decay3Bodys,
-    TracksExt const &tracks, aod::McParticles const &mcParticles)
+  void processTracked3Bodys(aod::Collision const& collision,
+                            aod::Tracked3Bodys const& tracked3Bodys, aod::Decay3Bodys const& decay3Bodys,
+                            TracksExt const& tracks, aod::McParticles const& mcParticles)
   {
-    for (const auto &tracked3Body : tracked3Bodys) {
+    for (const auto& tracked3Body : tracked3Bodys) {
       tracked3Body.itsTrack();
-      const auto &decay3Body = tracked3Body.decay3Body();
+      const auto& decay3Body = tracked3Body.decay3Body();
       decay3Body.track0();
       decay3Body.track1();
       decay3Body.track2();
