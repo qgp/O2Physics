@@ -39,7 +39,10 @@ struct StrangenessTrackingQATask {
 
   float Square(float x) { return x * x; }
   template <typename T>
-  float QuadraticSum(T x, T y) { return TMath::Sqrt(x * x + y * y); }
+  float QuadraticSum(T x, T y)
+  {
+    return TMath::Sqrt(x * x + y * y);
+  }
 
   void init(InitContext const&)
   {
@@ -79,9 +82,9 @@ struct StrangenessTrackingQATask {
       hMassVsPt->Fill(trackedCascade.omegaMass(), track.pt());
 
       LOGF(info, "ptrack (id: %d, pdg: %d) has mother %d", ptrack.mcParticleId(),
-        ptrack.mcParticle().pdgCode(), ptrack.mcParticle().has_mothers() ? ptrack.mcParticle().mothersIds()[0] : -1);
+           ptrack.mcParticle().pdgCode(), ptrack.mcParticle().has_mothers() ? ptrack.mcParticle().mothersIds()[0] : -1);
       LOGF(info, "ntrack (id: %d, pdg: %d) has mother %d", ntrack.mcParticleId(),
-        ntrack.mcParticle().pdgCode(), ntrack.mcParticle().has_mothers() ? ntrack.mcParticle().mothersIds()[0] : -1);
+           ntrack.mcParticle().pdgCode(), ntrack.mcParticle().has_mothers() ? ntrack.mcParticle().mothersIds()[0] : -1);
 
       if (ptrack.mcParticle().has_mothers() && ntrack.mcParticle().has_mothers() &&
           ptrack.mcParticle().mothersIds()[0] == ntrack.mcParticle().mothersIds()[0]) {
@@ -89,7 +92,7 @@ struct StrangenessTrackingQATask {
         LOG(info) << "v0 with PDG code: " << v0part.pdgCode();
         if (v0part.has_mothers() && bachelor.mcParticle().has_mothers() &&
             v0part.mothersIds()[0] == bachelor.mcParticle().mothersIds()[0]) {
-              LOG(info) << "cascade with PDG code: " << v0part.mothers_as<aod::McParticles>()[0].pdgCode();
+          LOG(info) << "cascade with PDG code: " << v0part.mothers_as<aod::McParticles>()[0].pdgCode();
         }
       }
     }
@@ -99,7 +102,7 @@ struct StrangenessTrackingQATask {
   void processCascades(aod::Collision const& collision, aod::TrackedCascades const& trackedCascades, aod::Cascades const& cascades, aod::V0s const& v0s,
                        soa::Join<aod::TraCascDatas, aod::McTraCascLabels> const& trackedcascdata, TracksExt const& tracks, aod::McParticles const& mcParticles)
   {
-    for (const auto &trackedCascadeData : trackedcascdata) {
+    for (const auto& trackedCascadeData : trackedcascdata) {
       hBuilderMassVsPt->Fill(trackedCascadeData.mOmega(), trackedCascadeData.pt());
     }
 
@@ -115,7 +118,7 @@ struct StrangenessTrackingQATask {
         if (v0part.has_mothers() && bachelor.mcParticle().has_mothers() &&
             v0part.mothersIds()[0] == bachelor.mcParticle().mothersIds()[0]) {
           int mcid = v0part.mothersIds()[0];
-          for (const auto &trackedCascadeData : trackedcascdata) {
+          for (const auto& trackedCascadeData : trackedcascdata) {
             if (trackedCascadeData.mcParticleId() == mcid) {
               hMassVsMass->Fill(trackedCascade.omegaMass(), trackedCascadeData.mOmega());
               break;
