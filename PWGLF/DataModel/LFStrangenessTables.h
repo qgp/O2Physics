@@ -551,4 +551,4 @@ using Tracked3BodyColl = Tracked3BodyColls::iterator;
 
 } // namespace o2::aod
 
-#endif  // PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_
+#endif // PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_
