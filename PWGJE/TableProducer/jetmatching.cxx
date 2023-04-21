@@ -11,7 +11,7 @@
 
 /// \file jetmatching.cxx
 /// \brief Unified implementation of jet matching based on different criteria
-/// expanding on previously separate implementations of geometric matching 
+/// expanding on previously separate implementations of geometric matching
 /// (by Raymond Ehlers) and heavy-flavour matching
 ///
 /// \author Raymond Ehlers <raymond.ehlers@cern.ch>, ORNL
@@ -43,8 +43,8 @@ struct JetMatchingHF {
 
   // preslicing jet collections, only for MC-based collection
 
-  Preslice<BaseJetCollection> baseJetsPerCollision = []{ if constexpr (o2::soa::relatedByIndex<aod::McCollisions, BaseJetCollection>()) return aod::jet::mcCollisionId; else return aod::jet::collisionId; }();
-  Preslice<TagJetCollection> tagJetsPerCollision = []{ if constexpr (o2::soa::relatedByIndex<aod::McCollisions, TagJetCollection>()) return aod::jet::mcCollisionId; else return aod::jet::collisionId; }();
+  Preslice<BaseJetCollection> baseJetsPerCollision = [] { if constexpr (o2::soa::relatedByIndex<aod::McCollisions, BaseJetCollection>()) return aod::jet::mcCollisionId; else return aod::jet::collisionId; }();
+  Preslice<TagJetCollection> tagJetsPerCollision = [] { if constexpr (o2::soa::relatedByIndex<aod::McCollisions, TagJetCollection>()) return aod::jet::mcCollisionId; else return aod::jet::collisionId; }();
 
   using Collisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
