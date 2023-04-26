@@ -31,4 +31,3 @@ using Tracked3BodyColl = Tracked3BodyColls::iterator;
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_STRANGENESSTRACKING_H_
-
