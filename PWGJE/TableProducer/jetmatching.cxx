@@ -72,7 +72,7 @@ struct JetMatchingHF {
   {
   }
 
-  // for now: 
+  // for now:
   // BaseJetCollection must contain detector level jets
   // TagJetCollection must contain particle level jets
   void process(Collisions::iterator const& collision, aod::McCollisions const& mcCollisions,
