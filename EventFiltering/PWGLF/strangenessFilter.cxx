@@ -106,6 +106,7 @@ struct strangenessFilter {
   Configurable<float> minPtTrackedCascade{"minPtTrackedCascade", 0., "Min. pt for tracked cascades"};
   Configurable<float> massWindowTrackedOmega{"massWindowTrackedOmega", 0.05, "Inv. mass window for tracked Omega-"};
   Configurable<float> massWindowTrackedXi{"massWindowTrackedXi", 0.05, "Inv. mass window for tracked Xi-"};
+  Configurable<float> massWindowLambda{"massWindowLambda", 0.05, "Inv. mass window for Lambda (ST)"};
   Configurable<float> minPtTrackedV0{"minPtTrackedV0", 0., "Min. pt for tracked V0"};
   Configurable<float> minPtTracked3Body{"minPtTracked3Body", 0., "Min. pt for tracked 3Body"};
 
@@ -264,6 +265,7 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.add("hMassOmegaTrkCasc", "Tracked cascades;m_{#Omega} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 1., 3.}});
       QAHistosStrangenessTracking.add("hMassXiTrkCasc", "Tracked cascades;m_{#Xi} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 1., 3.}});
       QAHistosStrangenessTracking.add("hMassV0TrkCasc", "Tracked cascades;m_{V^{0}} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 1., 3.}});
+      QAHistosStrangenessTracking.add("hMatchChi2TrkCasc", "Tracked cascades;#chi^{2}", HistType::kTH1D, {{1000, 0., 100.}});
       QAHistosStrangenessTracking.add("hMassH3LTrkV0", "Tracked V0;m_{H3L} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 2.8, 3.8}});
       QAHistosStrangenessTracking.add("hMassH4LTrkV0", "Tracked V0;m_{H4L} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 3.8, 4.8}});
       QAHistosStrangenessTracking.add("hMassH3LTrk3body", "Tracked 3body;m_{H3L} (GeV/#it{c}^{2})", HistType::kTH1D, {{200, 0., 10.}});
@@ -992,6 +994,7 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.fill(HIST("hStRVsPtTrkCasc"), trackCasc.pt(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
       QAHistosStrangenessTracking.fill(HIST("hMassOmegaTrkCasc"), trackedCascade.omegaMass());
       QAHistosStrangenessTracking.fill(HIST("hMassXiTrkCasc"), trackedCascade.xiMass());
+      QAHistosStrangenessTracking.fill(HIST("hMatchChi2TrkCasc"), trackedCascade.matchingChi2());
 
       auto trackParCovTrk = getTrackParCov(trackCasc);
       o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovTrk, bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, &impactParameterTrk);
@@ -1004,7 +1007,7 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.fill(HIST("hDcaVsR"), impactParameterTrk.getY(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
 
       const auto cascade = trackedCascade.cascade();
-      const auto bachelor = cascade.bachelor();
+      // const auto bachelor = cascade.bachelor();
       const auto v0 = cascade.v0_as<o2::aod::V0sLinked>();
       const auto negTrack = v0.negTrack_as<DaughterTracks>();
       const auto posTrack = v0.posTrack_as<DaughterTracks>();
@@ -1013,15 +1016,20 @@ struct strangenessFilter {
 
       // TODO: check application of PID
 
-      momenta[0] = {posTrack.px(), posTrack.py(), posTrack.pz()};
-      momenta[1] = {negTrack.px(), negTrack.py(), negTrack.pz()};
-      QAHistosStrangenessTracking.fill(HIST("hMassV0TrkCasc"), RecoDecay::m(momenta, masses));
+      if (trackCasc.sign() < 0) {
+        // Omega-
+        momenta[0] = {posTrack.px(), posTrack.py(), posTrack.pz()};
+        momenta[1] = {negTrack.px(), negTrack.py(), negTrack.pz()};
+      } else {
+        // Omega+
+        momenta[0] = {negTrack.px(), negTrack.py(), negTrack.pz()};
+        momenta[1] = {posTrack.px(), posTrack.py(), posTrack.pz()};
+      }
+      const auto v0mass = RecoDecay::m(momenta, masses);
+      QAHistosStrangenessTracking.fill(HIST("hMassV0TrkCasc"), v0mass);
 
-      momenta[0] = {negTrack.px(), negTrack.py(), negTrack.pz()};
-      momenta[1] = {posTrack.px(), posTrack.py(), posTrack.pz()};
-      QAHistosStrangenessTracking.fill(HIST("hMassV0TrkCasc"), RecoDecay::m(momenta, masses));
-
-      if (trackCasc.pt() > minPtTrackedCascade) {
+      if ((trackCasc.pt() > minPtTrackedCascade) &&
+          (std::abs(v0mass - RecoDecay::getMassPDG(kLambda0)) < massWindowLambda)) {
         if ((std::abs(trackedCascade.omegaMass() - RecoDecay::getMassPDG(kOmegaMinus)) < massWindowTrackedOmega) ||
             (std::abs(trackedCascade.xiMass() - RecoDecay::getMassPDG(kXiMinus)) < massWindowTrackedXi)) {
           keepEvent[7] = true;
