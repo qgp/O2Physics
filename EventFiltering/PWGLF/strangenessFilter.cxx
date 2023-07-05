@@ -263,7 +263,7 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.add("hStRVsPtTrkCasc", "Tracked cascades;p_{T} (GeV/#it{c});R (cm)", HistType::kTH2D, {{200, 0., 10.}, {200, 0., 50}});
       QAHistosStrangenessTracking.add("hMassOmegaTrkCasc", "Tracked cascades;m_{#Omega} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 1., 3.}});
       QAHistosStrangenessTracking.add("hMassXiTrkCasc", "Tracked cascades;m_{#Xi} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 1., 3.}});
-      QAHistosStrangenessTracking.add("hMassV0TrkCasc", "Tracked cascades;m_{V^{0}} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 0., 10.}});
+      QAHistosStrangenessTracking.add("hMassV0TrkCasc", "Tracked cascades;m_{V^{0}} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 1., 3.}});
       QAHistosStrangenessTracking.add("hMassH3LTrkV0", "Tracked V0;m_{H3L} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 2.8, 3.8}});
       QAHistosStrangenessTracking.add("hMassH4LTrkV0", "Tracked V0;m_{H4L} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 3.8, 4.8}});
       QAHistosStrangenessTracking.add("hMassH3LTrk3body", "Tracked 3body;m_{H3L} (GeV/#it{c}^{2})", HistType::kTH1D, {{200, 0., 10.}});
@@ -564,7 +564,7 @@ struct strangenessFilter {
   //////////////////////////////////////////////////////
 
   void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks,
-                   aod::AssignedTrackedCascades const& trackedCascades, aod::AssignedTrackedV0s const& trackedV0s, aod::AssignedTracked3Bodys const& tracked3Bodys, aod::BCsWithTimestamps const&)
+                   aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades, aod::AssignedTrackedV0s const& trackedV0s, aod::AssignedTracked3Bodys const& tracked3Bodys, aod::BCsWithTimestamps const&)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked cascade, [8] tracked V0, [9] tracked 3Body
@@ -1005,13 +1005,13 @@ struct strangenessFilter {
 
       const auto cascade = trackedCascade.cascade();
       const auto bachelor = cascade.bachelor();
-      const auto v0 = cascade.v0();
-      const auto negTrack = v0.negTrack();
-      const auto posTrack = v0.posTrack();
+      const auto v0 = cascade.v0_as<o2::aod::V0sLinked>();
+      const auto negTrack = v0.negTrack_as<DaughterTracks>();
+      const auto posTrack = v0.posTrack_as<DaughterTracks>();
       std::array<double, 2> masses{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiMinus)};
       std::array<std::array<float, 3>, 2> momenta;
 
-      // TODO: check PID
+      // TODO: check application of PID
 
       momenta[0] = {posTrack.px(), posTrack.py(), posTrack.pz()};
       momenta[1] = {negTrack.px(), negTrack.py(), negTrack.pz()};
