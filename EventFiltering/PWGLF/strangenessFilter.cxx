@@ -92,9 +92,6 @@ struct strangenessFilter {
   Configurable<bool> kint7{"kint7", 0, "Apply kINT7 event selection"};
   Configurable<bool> sel7{"sel7", 0, "Apply sel7 event selection"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
-  Configurable<float> minPtTrackedCascade{"minPtTrackedCascade", 0., "Min. pt for tracked cascades"};
-  Configurable<float> minPtTrackedV0{"minPtTrackedV0", 0., "Min. pt for tracked V0"};
-  Configurable<float> minPtTracked3Body{"minPtTracked3Body", 0., "Min. pt for tracked 3Body"};
 
   // Selections criteria for tracks
   Configurable<float> hEta{"hEta", 0.9f, "Eta range for trigger particles"};
@@ -266,6 +263,7 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.add("hStRVsPtTrkCasc", "Tracked cascades;p_{T} (GeV/#it{c});R (cm)", HistType::kTH2D, {{200, 0., 10.}, {200, 0., 50}});
       QAHistosStrangenessTracking.add("hMassOmegaTrkCasc", "Tracked cascades;m_{#Omega} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 1., 3.}});
       QAHistosStrangenessTracking.add("hMassXiTrkCasc", "Tracked cascades;m_{#Xi} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 1., 3.}});
+      QAHistosStrangenessTracking.add("hMassV0TrkCasc", "Tracked cascades;m_{V^{0}} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 0., 10.}});
       QAHistosStrangenessTracking.add("hMassH3LTrkV0", "Tracked V0;m_{H3L} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 2.8, 3.8}});
       QAHistosStrangenessTracking.add("hMassH4LTrkV0", "Tracked V0;m_{H4L} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 3.8, 4.8}});
       QAHistosStrangenessTracking.add("hMassH3LTrk3body", "Tracked 3body;m_{H3L} (GeV/#it{c}^{2})", HistType::kTH1D, {{200, 0., 10.}});
@@ -1004,6 +1002,24 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.fill(HIST("hDcaZVsPt"), trackParCovTrk.getPt(), impactParameterTrk.getZ());
       QAHistosStrangenessTracking.fill(HIST("hDcaVsPt"), impactParameterTrk.getY(), trackCasc.pt());
       QAHistosStrangenessTracking.fill(HIST("hDcaVsR"), impactParameterTrk.getY(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
+
+      const auto cascade = trackedCascade.cascade();
+      const auto bachelor = cascade.bachelor();
+      const auto v0 = cascade.v0();
+      const auto negTrack = v0.negTrack();
+      const auto posTrack = v0.posTrack();
+      std::array<double, 2> masses{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiMinus)};
+      std::array<std::array<float, 3>, 2> momenta;
+
+      // TODO: check PID
+
+      momenta[0] = {posTrack.px(), posTrack.py(), posTrack.pz()};
+      momenta[1] = {negTrack.px(), negTrack.py(), negTrack.pz()};
+      QAHistosStrangenessTracking.fill(HIST("hMassV0TrkCasc"), RecoDecay::m(momenta, masses));
+
+      momenta[0] = {negTrack.px(), negTrack.py(), negTrack.pz()};
+      momenta[1] = {posTrack.px(), posTrack.py(), posTrack.pz()};
+      QAHistosStrangenessTracking.fill(HIST("hMassV0TrkCasc"), RecoDecay::m(momenta, masses));
 
       if (trackCasc.pt() > minPtTrackedCascade) {
         if ((std::abs(trackedCascade.omegaMass() - RecoDecay::getMassPDG(kOmegaMinus)) < massWindowTrackedOmega) ||
