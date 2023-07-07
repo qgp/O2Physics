@@ -1058,9 +1058,9 @@ struct strangenessFilter {
       if ((trackCasc.pt() > minPtTrackedCascade) &&
           (trackedCascade.matchingChi2() < maxMatchingChi2TrackedCascade) &&
           (std::abs(v0mass - RecoDecay::getMassPDG(kLambda0)) < massWindowLambda) &&
-          (std::abs(nsigma[0]) < maxNSigmaV0PrTrackedCascade) && 
+          (std::abs(nsigma[0]) < maxNSigmaV0PrTrackedCascade) &&
           (std::abs(nsigma[1]) < maxNSigmaV0PiTrackedCascade)) {
-          // Xi
+        // Xi
         if ((std::abs(trackedCascade.xiMass() - RecoDecay::getMassPDG(kXiMinus)) < massWindowTrackedXi) &&
             (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelorTrackedXi)) {
           keepEvent[7] = true;
