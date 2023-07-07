@@ -30,7 +30,6 @@ namespace o2::aod
 {
 namespace full
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);
@@ -84,9 +83,32 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3Prong, "_0");
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
-                  full::CollisionId,
+DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
+                  o2::soa::Index<>,
                   collision::BCId,
+                  collision::NumContrib,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
+                  full::IsEventReject,
+                  full::RunNumber);
+
+namespace full {
+  DECLARE_SOA_INDEX_COLUMN(HfCand3ProngFullEvent, hfCand3ProngFullEvent);
+}
+
+DECLARE_SOA_TABLE(HfCand3ProngFullParticles, "AOD", "HFCAND3PFullP",
+                  full::HfCand3ProngFullEventId,
+                  full::Pt,
+                  full::Eta,
+                  full::Phi,
+                  full::Y,
+                  full::MCflag,
+                  full::OriginMcGen,
+                  full::CandidateId); // TODO: why?
+
+DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
+                  full::HfCand3ProngFullEventId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
@@ -158,28 +180,7 @@ DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
                   full::MCflag,
                   full::OriginMcRec,
                   full::IsCandidateSwapped,
-                  full::CandidateId);
-
-DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
-                  full::CollisionId,
-                  collision::BCId,
-                  collision::NumContrib,
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ,
-                  full::IsEventReject,
-                  full::RunNumber);
-
-DECLARE_SOA_TABLE(HfCand3ProngFullParticles, "AOD", "HFCAND3PFullP",
-                  full::CollisionId,
-                  collision::BCId,
-                  full::Pt,
-                  full::Eta,
-                  full::Phi,
-                  full::Y,
-                  full::MCflag,
-                  full::OriginMcGen,
-                  full::CandidateId);
+                  full::CandidateId); // TODO: why?
 
 } // namespace o2::aod
 
@@ -206,14 +207,13 @@ struct HfTreeCreatorLcToPKPi {
     rowCandidateFullEvents.reserve(collisions.size());
     for (auto& collision : collisions) {
       rowCandidateFullEvents(
-        collision.globalIndex(),
         collision.bcId(),
         collision.numContrib(),
         collision.posX(),
         collision.posY(),
         collision.posZ(),
         0,
-        1);
+        1); // TODO: why don't we store the run number?
     }
 
     // Filling candidate properties
@@ -231,8 +231,7 @@ struct HfTreeCreatorLcToPKPi {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
-            candidate.collisionId(),
-            trackPos1.collision().bcId(),
+            rowCandidateFullEvents.lastIndex(),
             trackPos1.collision().numContrib(),
             candidate.posX(),
             candidate.posY(),
@@ -317,8 +316,7 @@ struct HfTreeCreatorLcToPKPi {
     for (auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
         rowCandidateFullParticles(
-          particle.mcCollision().globalIndex(),
-          particle.mcCollision().bcId(),
+          rowCandidateFullEvents.lastIndex(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
@@ -340,7 +338,6 @@ struct HfTreeCreatorLcToPKPi {
     rowCandidateFullEvents.reserve(collisions.size());
     for (auto& collision : collisions) {
       rowCandidateFullEvents(
-        collision.globalIndex(),
         collision.bcId(),
         collision.numContrib(),
         collision.posX(),
@@ -365,7 +362,6 @@ struct HfTreeCreatorLcToPKPi {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
-            candidate.collisionId(),
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),
             candidate.posX(),
