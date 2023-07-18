@@ -11,7 +11,8 @@
 
 // jet finder task header file
 //
-// Authors: Nima Zardoshti, Jochen Klein
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+/// \author Jochen Klein <jochen.klein@cern.ch>
 
 #ifndef PWGJE_TABLEPRODUCER_JETFINDER_H_
 #define PWGJE_TABLEPRODUCER_JETFINDER_H_
@@ -38,15 +39,25 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 
+<<<<<<< HEAD
 using JetTracks = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection>>;
 using JetClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 
 using ParticlesD0 = o2::soa::Filtered<o2::soa::Join<o2::aod::McParticles, o2::aod::HfCand2ProngMcGen>>;
 using ParticlesLc = o2::soa::Filtered<o2::soa::Join<o2::aod::McParticles, o2::aod::HfCand3ProngMcGen>>;
 using ParticlesBplus = o2::soa::Filtered<o2::soa::Join<o2::aod::McParticles, o2::aod::HfCandBplusMcGen>>;
+=======
+using JetTracks = aod::JTracks;
+using JetClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+
+using ParticlesD0 = soa::Filtered<soa::Join<aod::JMcParticles, aod::HfCand2ProngMcGen>>;
+using ParticlesLc = soa::Filtered<soa::Join<aod::JMcParticles, aod::HfCand3ProngMcGen>>;
+using ParticlesBplus = soa::Filtered<soa::Join<aod::JMcParticles, aod::HfCandBplusMcGen>>;
+>>>>>>> 08291f68... PWGJE: setting up a self consistent jet framework
 
 using CandidatesD0Data = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCand2Prong, o2::aod::HfSelD0>>;
 using CandidatesD0MCD = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCand2Prong, o2::aod::HfSelD0, o2::aod::HfCand2ProngMcRec>>;
@@ -59,27 +70,12 @@ using CandidatesLcMCD = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCand3Prong, o
 
 // functions for track, cluster and candidate selection
 
-// function that performs track selections on each track
-template <typename T>
-bool selectTrack(T const& track, std::string trackSelection)
-{
-  if (trackSelection == "globalTracks") {
-    return track.isGlobalTrackWoPtEta();
-  } else if (trackSelection == "QualityTracks") {
-    return track.isQualityTrack();
-  } else if (trackSelection == "hybridTracksJE") {
-    return track.trackCutFlagFb5();
-  } else {
-    return true;
-  }
-}
-
 // function that adds tracks to the fastjet list, removing daughters of 2Prong candidates
 template <typename T, typename U>
-void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, std::string trackSelection, std::optional<U> const& candidate = std::nullopt)
+void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, std::optional<U> const& candidate = std::nullopt)
 {
   for (auto& track : tracks) {
-    if (!selectTrack(track, trackSelection)) {
+    if (!JetDerivedDataUtilities::selectTrack(track, trackSelection)) {
       continue;
     }
     if (candidate != std::nullopt) {
