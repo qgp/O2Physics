@@ -11,7 +11,7 @@
 
 // jet substructure tree filling task (subscribing to jet finder hf and jet substructure tasks)
 //
-// Author: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
 #include "Framework/ASoA.h"
@@ -76,9 +76,9 @@ struct JetSubstructureOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutput, "jet substructure output", false);
 };
-using JetSubstructureOutputData = JetSubstructureOutputTask<aod::Collisions, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures>>, aod::ChargedJetOutput, aod::ChargedJetSubstructureOutput>;
-using JetSubstructureOutputMCDetectorLevel = JetSubstructureOutputTask<aod::Collisions, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetSubstructures>>, aod::ChargedMCDetectorLevelJetOutput, aod::ChargedMCDetectorLevelJetSubstructureOutput>;
-using JetSubstructureOutputMCParticleLevel = JetSubstructureOutputTask<aod::McCollisions, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetSubstructures>>, aod::ChargedMCParticleLevelJetOutput, aod::ChargedMCParticleLevelJetSubstructureOutput>;
+using JetSubstructureOutputData = JetSubstructureOutputTask<aod::JCollisions, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures>>, aod::ChargedJetOutput, aod::ChargedJetSubstructureOutput>;
+using JetSubstructureOutputMCDetectorLevel = JetSubstructureOutputTask<aod::JCollisions, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetSubstructures>>, aod::ChargedMCDetectorLevelJetOutput, aod::ChargedMCDetectorLevelJetSubstructureOutput>;
+using JetSubstructureOutputMCParticleLevel = JetSubstructureOutputTask<aod::JMcCollisions, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetSubstructures>>, aod::ChargedMCParticleLevelJetOutput, aod::ChargedMCParticleLevelJetSubstructureOutput>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

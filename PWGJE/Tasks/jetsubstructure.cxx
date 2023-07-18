@@ -11,7 +11,7 @@
 
 // jet analysis tasks (subscribing to jet finder task)
 //
-// Author: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
 #include "fastjet/PseudoJet.hh"
@@ -102,16 +102,16 @@ struct JetSubstructureTask {
     jetSubstructureTable(zg, rg, nsd);
   }
 
-  void processDummy(aod::Tracks const& track)
+  void processDummy(aod::JTracks const& track)
   {
   }
   PROCESS_SWITCH(JetSubstructureTask, processDummy, "Dummy process function turned on by default", true);
 
   void processChargedJets(typename JetTable::iterator const& jet,
-                          aod::Tracks const& tracks)
+                          aod::JTracks const& tracks)
   {
     jetConstituents.clear();
-    for (auto& jetConstituent : jet.template tracks_as<aod::Tracks>()) {
+    for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
       FastJetUtilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
     }
     jetReclustering(jet);
@@ -119,10 +119,10 @@ struct JetSubstructureTask {
   PROCESS_SWITCH(JetSubstructureTask, processChargedJets, "charged jet substructure", false);
 
   void processChargedJetsMCP(typename JetTableMCP::iterator const& jet,
-                             aod::McParticles const& particles)
+                             aod::JMcParticles const& particles)
   {
     jetConstituents.clear();
-    for (auto& jetConstituent : jet.template tracks_as<aod::McParticles>()) {
+    for (auto& jetConstituent : jet.template tracks_as<aod::JMcParticles>()) {
       FastJetUtilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), RecoDecay::getMassPDG(jetConstituent.pdgCode()));
     }
     jetReclustering(jet);
