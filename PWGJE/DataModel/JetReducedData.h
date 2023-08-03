@@ -39,7 +39,7 @@ DECLARE_SOA_TABLE(JCollisions, "AOD", "JCollisions",
 
 using JCollision = JCollisions::iterator;
 
-DECLARE_SOA_TABLE(StoredJCollisions, "AOD", "JCollisions",
+DECLARE_SOA_TABLE(StoredJCollisions, "DYN", "JCollisions",
                   o2::soa::Index<>,
                   jcollision::PosZ,
                   jcollision::EventSel,
@@ -142,7 +142,7 @@ DECLARE_SOA_TABLE(JTracks, "AOD", "JTracks",
 
 using JTrack = JTracks::iterator;
 
-DECLARE_SOA_TABLE(StoredJTracks, "AOD", "JTracks",
+DECLARE_SOA_TABLE(StoredJTracks, "DYN", "JTracks",
                   o2::soa::Index<>,
                   jtrack::JCollisionId,
                   jtrack::Pt,
