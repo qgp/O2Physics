@@ -106,14 +106,14 @@ struct JetDerivedDataProducerTask {
   }
 
   void processChargedData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-                          soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
+                          soa::Join<aod::Tracks, aod::TrackSelection> const& tracks)
   {
     fillJetCollisionsTable(collision);
     for (auto& track : tracks) {
       fillJetTracksTable(collision, track);
     }
   }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processChargedData, "jet track table producer data", false);
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processChargedData, "jet track table producer data", true);
 
   void processChargedTriggered(soa::Join<aod::Collisions, aod::JetFilters>::iterator const& collision)
   {
