@@ -239,10 +239,10 @@ struct HfTreeCreatorOmegacSt {
   PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMc, "Process MC", true);
 
   void processData(aod::Collision const& collision,
-                   aod::AssignedTrackedCascades const& trackedCascades, 
+                   aod::AssignedTrackedCascades const& trackedCascades,
                    aod::Cascades const& cascades,
-                   aod::V0s const& v0s, 
-                   TracksExt const& tracks, 
+                   aod::V0s const& v0s,
+                   TracksExt const& tracks,
                    aod::BCsWithTimestamps const&)
   {
     const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -393,14 +393,14 @@ struct HfTreeCreatorOmegacSt {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacSt, processData, "Process data", true);
 
-  void processMcGen(aod::Collision const& collision, 
-                  aod::McCollisions const& mcCollisions,
-                  aod::AssignedTrackedCascades const& trackedCascades, 
-                  aod::Cascades const& cascades,
-                  aod::V0s const& v0s, 
-                  TracksExtMc const& tracks, 
-                  aod::McParticles const& mcParticles, 
-                  aod::BCsWithTimestamps const&)
+  void processMcGen(aod::Collision const& collision,
+                    aod::McCollisions const& mcCollisions,
+                    aod::AssignedTrackedCascades const& trackedCascades,
+                    aod::Cascades const& cascades,
+                    aod::V0s const& v0s,
+                    TracksExtMc const& tracks,
+                    aod::McParticles const& mcParticles,
+                    aod::BCsWithTimestamps const&)
   {
     const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
