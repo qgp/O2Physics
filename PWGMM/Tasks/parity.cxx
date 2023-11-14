@@ -33,6 +33,7 @@ struct ParityTask {
   OutputObj<TH1F> hPt{"h_pt"};
   OutputObj<TH2F> hNtracksPt{"h_ntracks_pt"};
   OutputObj<TH1F> hDet{"h_det"};
+  OutputObj<TH1F> hNtracks{"h_ntracks"};
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> trackPtCut{"trackPtCut", 0.1, "minimum track pT"};
@@ -54,6 +55,7 @@ struct ParityTask {
 			    100, 0., 100.));
     hNtracksPt.setObject(new TH2F("h_ntracks_pt", ";n_{trk};p_{T} (GeV/#it{c})", 200, -.5, 199.5, 100, 0., 10.));
     hDet.setObject(new TH1F("h_det", "det", 3, -1.5, 1.5));
+    hNtracks.setObject(new TH1F("h_ntracks", ";N_{trk}", 100, 0., 100.));
   }
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>> const& tracks)
@@ -64,17 +66,18 @@ struct ParityTask {
     if (!collision.sel8()) return;
     hEvSel->Fill("sel8", 1.);
 
-    if (tracks.size() > 10) return;
+    if (tracks.size() > 20) return;
     hEvSel->Fill("tracks", 1.);
 
     std::vector<double> trackpt;
 
     for (const auto &track : tracks) {
       LOG(debug) << "track pt" << track.pt();
-      // if(!globalTracks.IsSelected(track)) continue;
+      if(!globalTracks.IsSelected(track)) continue;
       trackpt.emplace_back(track.pt());
     	hPt->Fill(track.pt());
     }
+    hNtracks->Fill(trackpt.size());
     std::sort(trackpt.begin(), trackpt.end(), std::greater<double>());
     int n_track = 1;
     for (const auto & pt : trackpt) {
