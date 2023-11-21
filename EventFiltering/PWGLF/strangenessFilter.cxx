@@ -1121,12 +1121,10 @@ struct strangenessFilter {
           std::array<float, 3> pvPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
           cpa = RecoDecay::cpa(pvPos, df2.getPCACandidate(), pVec);
           QAHistosStrangenessTracking.fill(HIST("hCpa"), cpa);
-        }
-        else {
+        } else {
           continue;
         }
-      }
-      else {
+      } else {
         continue;
       }
 
