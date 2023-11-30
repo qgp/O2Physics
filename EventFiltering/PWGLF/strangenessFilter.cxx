@@ -365,7 +365,8 @@ struct strangenessFilter {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int runNumber;
 
-  float getMassWindowOmega(const float pt, const float nsigma = 6) {
+  float getMassWindowOmega(const float pt, const float nsigma = 6)
+  {
     return parNsigmaOmega0 * exp(parNsigmaOmega1 * pt) + parNsigmaOmega2 * exp(parNsigmaOmega3 * pt);
   }
   ////////////////////////////////////////////////////////
