@@ -29,8 +29,18 @@
 
 namespace o2::aod
 {
+// need to consider
+// D0 -> K- + pi+
+// D+ -> K- + pi+ + pi+ (use 3P or separate tables?)
+// Lc -> pi+ K- p
+// B0 -> D- + pi+
+// B+ -> D0 + pi+
 constexpr uint MarkerD0 = 1;
 constexpr uint Marker3P = 2;
+constexpr uint MarkerBplus = 3;
+constexpr uint MarkerB0 = 4;
+// TODO: use 3P or separate tables for Dplus?
+// TODO: generalize D0 to 2P? benefit?
 
 // ================
 // Collision tables
@@ -71,6 +81,27 @@ using HfD0CollBase = HfD0CollBases::iterator;
 DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID", //! Table with original global indices of collisions
                   hf_cand::CollisionId,
                   soa::Marker<MarkerD0>);
+
+DECLARE_SOA_TABLE(HfBplusCollBases, "AOD", "HFBPLUSCOLLBASE", //! Table with basic collision info
+                  o2::soa::Index<>,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
+                  collision::NumContrib,
+                  hf_coll_base::CentFT0A,
+                  hf_coll_base::CentFT0C,
+                  hf_coll_base::CentFT0M,
+                  hf_coll_base::CentFV0A,
+                  hf_coll_base::MultZeqNTracksPV,
+                  // hf_coll_base::IsEventReject,
+                  // bc::RunNumber,
+                  soa::Marker<MarkerBplus>);
+
+using HfBplusCollBase = HfBplusCollBases::iterator;
+
+DECLARE_SOA_TABLE(HfBplusCollIds, "AOD", "HFBPLUSCOLLID", //! Table with original global indices of collisions
+                  hf_cand::CollisionId,
+                  soa::Marker<MarkerBplus>);
 
 // 3-prong decays
 
@@ -159,6 +190,10 @@ namespace hf_cand_base
 namespace der_d0
 {
 DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfCollBase); //! collision index pointing to the derived collision table for D0 candidates
+}
+namespace der_bplus
+{
+DECLARE_SOA_INDEX_COLUMN(HfBplusCollBase, hfCollBase); //! collision index pointing to the derived collision table for D0 candidates
 }
 namespace der_3p
 {
@@ -355,6 +390,102 @@ DECLARE_SOA_TABLE(HfD0Mcs, "AOD", "HFD0MC", //! Table with MC candidate info
                   hf_cand_mc::FlagMcMatchRec,
                   hf_cand_mc::OriginMcRec,
                   soa::Marker<MarkerD0>);
+
+// B+
+namespace hf_cand_base
+{
+namespace der_bplus
+{
+DECLARE_SOA_INDEX_COLUMN(HfD0Base, hfD0);
+}
+}
+
+DECLARE_SOA_TABLE(HfBplusBases, "AOD", "HFBPLUSBASE", //! Table with basic candidate properties used in the analyses
+                  o2::soa::Index<>,
+                  hf_cand_base::der_bplus::HfBplusCollBaseId,
+                  hf_cand_base::der_bplus::HfD0BaseId,
+                  hf_cand_base::Pt,
+                  hf_cand_base::Eta,
+                  hf_cand_base::Phi,
+                  hf_cand_base::M,
+                  hf_cand_base::Y,
+                  hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
+                  hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
+                  hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
+                  hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
+                  soa::Marker<MarkerBplus>);
+
+// TODO: add index to D0 somewhere?
+
+// candidates for removal:
+// PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep Pt, Eta, Phi instead
+// XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
+// normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
+DECLARE_SOA_TABLE(HfBplusPars, "AOD", "HFBPLUSPAR", //! Table with candidate properties used for selection
+                  hf_cand::Chi2PCA,
+                  hf_cand_par::Cpa,
+                  hf_cand_par::CpaXY,
+                  hf_cand_par::DecayLength,
+                  hf_cand_par::DecayLengthXY,
+                  hf_cand_par::DecayLengthNormalised,
+                  hf_cand_par::DecayLengthXYNormalised,
+                  hf_cand_par::PtProng0,
+                  hf_cand_par::PtProng1,
+                  hf_cand::ImpactParameter0,
+                  hf_cand::ImpactParameter1,
+                  hf_cand_par::ImpactParameterNormalised0,
+                  hf_cand_par::ImpactParameterNormalised1,
+                  hf_cand_par::NSigTpcPiExpPi,
+                  hf_cand_par::NSigTofPiExpPi,
+                  hf_cand_par::NSigTpcTofPiExpPi,
+                  hf_cand_par::NSigTpcKaExpPi,
+                  hf_cand_par::NSigTofKaExpPi,
+                  hf_cand_par::NSigTpcTofKaExpPi,
+                  hf_cand_par::MaxNormalisedDeltaIP,
+                  hf_cand_par::ImpactParameterProduct,
+                  soa::Marker<MarkerBplus>);
+
+DECLARE_SOA_TABLE(HfBplusParEs, "AOD", "HFBPLUSPARE", //! Table with additional candidate properties used for selection
+                  hf_cand::XSecondaryVertex,
+                  hf_cand::YSecondaryVertex,
+                  hf_cand::ZSecondaryVertex,
+                  hf_cand::ErrorDecayLength,
+                  hf_cand::ErrorDecayLengthXY,
+                  hf_cand::KfTopolChi2OverNdf,
+                  hf_cand_par::RSecondaryVertex,
+                  hf_cand_par::PProng0,
+                  hf_cand_par::PProng1,
+                  hf_cand::PxProng0,
+                  hf_cand::PyProng0,
+                  hf_cand::PzProng0,
+                  hf_cand::PxProng1,
+                  hf_cand::PyProng1,
+                  hf_cand::PzProng1,
+                  hf_cand::ErrorImpactParameter0,
+                  hf_cand::ErrorImpactParameter1,
+                  hf_cand_par::CosThetaStar,
+                  hf_cand_par::Ct,
+                  soa::Marker<MarkerBplus>);
+
+DECLARE_SOA_TABLE(HfBplusSels, "AOD", "HFBPLUSSEL", //! Table with candidate selection flags
+                  hf_cand_sel::CandidateSelFlag,
+                  soa::Marker<MarkerBplus>);
+
+DECLARE_SOA_TABLE(HfBplusMls, "AOD", "HFBPLUSML", //! Table with candidate selection ML scores
+                  hf_cand_mc::MlScores,
+                  soa::Marker<MarkerBplus>);
+
+DECLARE_SOA_TABLE(HfBplusIds, "AOD", "HFBPLUSID", //! Table with original global indices for candidates
+                  hf_cand::CollisionId,
+                  hf_track_index::Prong0Id,
+                  hf_track_index::Prong1Id,
+                  soa::Marker<MarkerBplus>);
+
+DECLARE_SOA_TABLE(HfBplusMcs, "AOD", "HFBPLUSMC", //! Table with MC candidate info
+                  hf_cand_mc::FlagMcMatchRec,
+                  hf_cand_mc::OriginMcRec,
+                  soa::Marker<MarkerBplus>);
+
 
 // 3-prong decays
 
