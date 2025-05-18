@@ -83,7 +83,7 @@ DECLARE_SOA_TABLE(HfStChBarGens, "AOD", "HFSTCHBARGEN",
                   hf_st_charmed_baryon_gen::DecayLengthCasc,
                   hf_st_charmed_baryon_gen::DecayLengthXYCasc);
 
-// CharmedBaryon -> Casc + Pion
+// CharmedBaryon -> Casc + Pion/Kaon
 //                   -> Lambda + BachPi/BachKa
 //                        -> Pr + Pi
 namespace hf_st_charmed_baryon
@@ -93,6 +93,8 @@ DECLARE_SOA_COLUMN(MassXi, massXi, float);
 DECLARE_SOA_COLUMN(MassLambda, massLambda, float);
 DECLARE_SOA_COLUMN(NSigmaTpcPion, nSigmaTpcPion, float);
 DECLARE_SOA_COLUMN(NSigmaTofPion, nSigmaTofPion, float);
+DECLARE_SOA_COLUMN(NSigmaTpcKaon, nSigmaTpcKaon, float);
+DECLARE_SOA_COLUMN(NSigmaTofKaon, nSigmaTofKaon, float);
 DECLARE_SOA_COLUMN(NSigmaTpcV0Pr, nSigmaTpcV0Pr, float);
 DECLARE_SOA_COLUMN(NSigmaTofV0Pr, nSigmaTofV0Pr, float);
 DECLARE_SOA_COLUMN(NSigmaTpcV0Pi, nSigmaTpcV0Pi, float);
@@ -146,6 +148,8 @@ DECLARE_SOA_TABLE(HfStChBars, "AOD", "HFSTCHBAR",
                   hf_st_charmed_baryon::MassLambda,
                   hf_st_charmed_baryon::NSigmaTpcPion,
                   hf_st_charmed_baryon::NSigmaTofPion,
+                  hf_st_charmed_baryon::NSigmaTpcKaon,
+                  hf_st_charmed_baryon::NSigmaTofKaon,
                   hf_st_charmed_baryon::NSigmaTpcV0Pr,
                   hf_st_charmed_baryon::NSigmaTofV0Pr,
                   hf_st_charmed_baryon::NSigmaTpcV0Pi,
@@ -227,6 +231,7 @@ struct HfTreeCreatorOmegacSt {
   Configurable<float> maxNSigmaV0Pr{"maxNSigmaV0Pr", 5., "Max Nsigma for proton from V0 from tracked cascade"};
   Configurable<float> maxNSigmaV0Pi{"maxNSigmaV0Pi", 5., "Max Nsigma for pion from V0 from tracked cascade"};
   Configurable<float> maxNSigmaPion{"maxNSigmaPion", 5., "Max Nsigma for pion to be paired with Omega"};
+  Configurable<float> maxNSigmaKaon{"maxNSigmaKaon", -1., "Max Nsigma for kaon to be paired with Omega"};
   Configurable<bool> bzOnly{"bzOnly", true, "Use B_z instead of full field map"};
 
   SliceCache cache;
@@ -318,6 +323,7 @@ struct HfTreeCreatorOmegacSt {
         const auto daughters = mcParticle.daughters_as<aod::McParticles>();
         if (daughters.size() == 2) {
           int idxPionDaughter = -1;
+          int idxKaonDaughter = -1;
           int idxCascDaughter = -1;
           const auto daughters = mcParticle.daughters_as<aod::McParticles>();
           for (const auto& daughter : daughters) {
@@ -327,8 +333,11 @@ struct HfTreeCreatorOmegacSt {
             if (idxPionDaughter < 0 && (std::abs(daughter.pdgCode()) == kPiPlus)) {
               idxPionDaughter = daughter.globalIndex();
             }
+            if (idxKaonDaughter < 0 && (std::abs(daughter.pdgCode()) == kKPlus)) {
+              idxKaonDaughter = daughter.globalIndex();
+            }
           }
-          if ((idxPionDaughter >= 0) && (idxCascDaughter >= 0)) {
+          if (((idxKaonDaughter >= 0) || (idxPionDaughter >= 0)) && (idxCascDaughter >= 0)) {
             const auto& cascDaughter = mcParticles.iteratorAt(idxCascDaughter);
             const auto& mcColl = mcParticle.mcCollision();
             std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
@@ -509,6 +518,7 @@ struct HfTreeCreatorOmegacSt {
               (std::abs(v0TrackPr.tpcNSigmaPr()) < maxNSigmaV0Pr) &&
               (std::abs(v0TrackPi.tpcNSigmaPi()) < maxNSigmaV0Pi)) {
             std::array<double, 2> massesOmegacDaughters{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
+            std::array<double, 2> massesOmegacToOmegaKa{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassKPlus};
             std::array<double, 2> massesXicDaughters{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus};
             std::array<std::array<float, 3>, 2> momenta;
 
@@ -541,8 +551,9 @@ struct HfTreeCreatorOmegacSt {
                   (track.tpcNClsCrossedRows() >= 0.8 * track.tpcNClsFindable()) &&
                   (track.tpcChi2NCl() <= 4.f) &&
                   (track.itsChi2NCl() <= 36.f) &&
-                  (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion)) {
-                LOGF(debug, "  .. combining with pion candidate %d", track.globalIndex());
+                  ((std::abs(track.tpcNSigmaPi()) < maxNSigmaPion) ||
+                   (std::abs(track.tpcNSigmaKa()) < maxNSigmaKaon))) {
+                LOGF(debug, "  .. combining with pion/kaon candidate %d", track.globalIndex());
                 int trackMotherId = -1;
                 if constexpr (std::is_same<TracksType, TracksExtMc>::value) {
                   if (track.has_mcParticle() && track.mcParticle().has_mothers()) {
@@ -582,11 +593,13 @@ struct HfTreeCreatorOmegacSt {
                     df2.getTrackParamAtPCA(0).getPxPyPzGlo(momenta[0]);
                     df2.getTrackParamAtPCA(1).getPxPyPzGlo(momenta[1]);
                     const auto massOmegaC = RecoDecay::m(momenta, massesOmegacDaughters);
+                    const auto massOmegaCToOmegaKa = RecoDecay::m(momenta, massesOmegacToOmegaKa);
                     const auto massXiC = RecoDecay::m(momenta, massesXicDaughters);
                     registry.fill(HIST("hMassOmegac"), massOmegaC);
                     registry.fill(HIST("hMassOmegacVsPt"), massOmegaC, RecoDecay::pt(momenta[0], momenta[1]));
 
                     if ((std::abs(massOmegaC - o2::constants::physics::MassOmegaC0) < massWindowOmegaC) ||
+                        (std::abs(massOmegaCToOmegaKa - o2::constants::physics::MassOmegaC0) < massWindowOmegaC) ||
                         (std::abs(massXiC - o2::constants::physics::MassXiC0) < massWindowXiC)) {
                       registry.fill(HIST("hDecayLength"), decayLength * 1e4);
                       registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
@@ -595,6 +608,8 @@ struct HfTreeCreatorOmegacSt {
                                   massV0,
                                   track.tpcNSigmaPi(),
                                   track.tofNSigmaPi(),
+                                  track.tpcNSigmaKa(),
+                                  track.tofNSigmaKa(),
                                   v0TrackPr.tpcNSigmaPr(),
                                   v0TrackPr.tofNSigmaPr(),
                                   v0TrackPi.tpcNSigmaPi(),
