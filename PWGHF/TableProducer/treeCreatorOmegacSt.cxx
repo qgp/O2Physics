@@ -257,7 +257,7 @@ struct HfTreeCreatorOmegacSt {
   using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using TracksExtMc = soa::Join<TracksExt, aod::McTrackLabels>;
 
-  Filter collisionFilter = (!useSel8Trigger.node()) || (o2::aod::evsel::sel8 == true);
+  Filter collisionFilter = (useSel8Trigger.node() == false) || (o2::aod::evsel::sel8 == true);
 
   // Preslice<aod::Tracks> perCol = aod::track::collisionId;
   PresliceUnsorted<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
@@ -364,14 +364,14 @@ struct HfTreeCreatorOmegacSt {
             }
           }
           if (idxPionDaughter >= 0 && idxCascDaughter >= 0) {
-            decayChannel = hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi; // OmegaC -> Omega + Pi
+            decayChannel = o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi; // OmegaC -> Omega + Pi
           } else if (idxKaonDaughter >= 0 && idxCascDaughter >= 0) {
-            decayChannel = hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK; // OmegaC -> Omega + K
+            decayChannel = o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK; // OmegaC -> Omega + K
           } else {
             LOG(warning) << "Decay channel not recognized!";
           }
           if (decayChannel != -1) {
-            int idxDaughter = (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) ? idxPionDaughter : idxKaonDaughter;
+            int idxDaughter = (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) ? idxPionDaughter : idxKaonDaughter;
             auto particle = mcParticles.rawIteratorAt(idxDaughter);
             origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
 
@@ -643,24 +643,24 @@ struct HfTreeCreatorOmegacSt {
                     auto arrayDaughters = std::array{
                       trackId.template track_as<TracksExtMc>, // bachelor <- charm baryon
                       casc.bachelor_as<TracksExtMc>(),        // bachelor <- cascade
-                      V0.posTrack_as<TracksExtMc>(),          // p <- lambda
-                      V0.negTrack_as<TracksExtMc>             // pi <- lambda
+                      v0.posTrack_as<TracksExtMc>(),          // p <- lambda
+                      v0.negTrack_as<TracksExtMc>             // pi <- lambda
                     };
                     auto arrayDaughtersCasc = std::array{
                       casc.bachelor_as<TracksExtMc>(), // bachelor <- cascade
-                      V0.posTrack_as<TracksExtMc>(),   // p <- lambda
-                      V0.negTrack_as<TracksExtMc>      // pi <- lambda
+                      v0.posTrack_as<TracksExtMc>(),   // p <- lambda
+                      v0.negTrack_as<TracksExtMc>      // pi <- lambda
                     };
                     auto arrayDaughtersV0 = std::array{
-                      V0.posTrack_as<TracksExtMc>(), // p <- lambda
-                      V0.negTrack_as<TracksExtMc>    // pi <- lambda
+                      v0.posTrack_as<TracksExtMc>(), // p <- lambda
+                      v0.negTrack_as<TracksExtMc>    // pi <- lambda
                     };
 
-                    if (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
+                    if (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
                       // Match Omegac0 → Omega- + Pi+
                       indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, arrayDaughters, +kOmegaC0,
                                                                                              std::array{+kPiPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3, &nPiToMuOmegac0, &nKaToPiOmegac0);
-                    } else if (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) {
+                    } else if (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) {
                       // Match Omegac0 → Omega- + K+
                       indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, arrayDaughters, +kOmegaC0,
                                                                                              std::array{+kKPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3, &nPiToMuOmegac0, &nKaToPiOmegac0);
@@ -673,19 +673,19 @@ struct HfTreeCreatorOmegacSt {
                       if (indexRec->- 1) {
                         // Lambda → p pi (Lambda match)
                         indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1, &nPiToMuV0);
-                        if (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
+                        if (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
                           if (nPiToMuOmegac0 >= 1 && nKaToPiOmegac0 == 0) {
                             isMatched = true;
                           } else if (nPiToMuOmegac0 == 0 && nKaToPiOmegac0 == 0) {
                             isMatched = true;
                           }
-                        } else if (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) {
+                        } else if (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) {
                           if (nPiToMuOmegac0 == 0 && nKaToPiOmegac0 == 0) {
                             isMatched = true;
                           }
                         }
                       }
-                    }
+                    }o2::aod::
                     if (isMatched) {
                       auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
                       origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
